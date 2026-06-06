@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  macos:
+    name: build (macOS)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      # macos-14 runners ship Node; pin it for the WebView UI build (Vite).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Sfizioso Player (VST3 / AU / Standalone)
+        run: cmake --build build --config Release
