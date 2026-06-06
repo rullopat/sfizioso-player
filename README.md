@@ -1,5 +1,7 @@
 # Sfizioso Player
 
+[![build](https://github.com/rullopat/sfizioso-player/actions/workflows/build.yml/badge.svg)](https://github.com/rullopat/sfizioso-player/actions/workflows/build.yml)
+
 An open SFZ player (VST3 / AU / Standalone) and the shared foundation it is
 built on, powered by the [sfizioso](https://github.com/rullopat/sfizioso) SFZ
 engine — an independent, MPE-capable fork of sfizz.
