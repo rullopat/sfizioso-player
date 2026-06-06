@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { TopBar } from "./components/TopBar";
-import { ParamModule } from "@shared/components/ParamModule";
+import { PanelSection } from "./components/PanelSection";
 import { Knob } from "@shared/components/Knob";
 import { Segmented } from "@shared/components/Segmented";
 import { LevelMeter } from "@shared/components/LevelMeter";
@@ -12,6 +12,7 @@ import {
   PARAM_MPE_MODE,
   FN_LOAD_SFZ,
   FN_GET_STATUS,
+  FN_GET_APP_INFO,
   EVT_VOICES,
   EVT_METER,
 } from "./paramIds";
@@ -24,6 +25,11 @@ type Status = {
   numPreloadedSamples: number;
 };
 
+type AppInfo = {
+  productName: string;
+  version: string;
+};
+
 const EMPTY_STATUS: Status = {
   sfzPath: "",
   fileName: "",
@@ -31,13 +37,21 @@ const EMPTY_STATUS: Status = {
   numPreloadedSamples: 0,
 };
 
+// Fallback until getAppInfo resolves; the real values come from the JUCE
+// plugin defines (CMake PRODUCT_NAME / VERSION) — never hardcode the brand.
+const DEFAULT_APP_INFO: AppInfo = { productName: "Sfizioso Player", version: "" };
+
 export default function App() {
   const [status, setStatus] = useState<Status>(EMPTY_STATUS);
   const [activeVoices, setActiveVoices] = useState(0);
+  const [appInfo, setAppInfo] = useState<AppInfo>(DEFAULT_APP_INFO);
 
   useEffect(() => {
     callNative<Status>(FN_GET_STATUS).then((s) => {
       if (s) setStatus(s);
+    });
+    callNative<AppInfo>(FN_GET_APP_INFO).then((a) => {
+      if (a?.productName) setAppInfo(a);
     });
     const unsub = onBackendEvent<{ active: number }>(EVT_VOICES, (e) =>
       setActiveVoices(e.active)
@@ -65,18 +79,61 @@ export default function App() {
 
   return (
     <div className="app noise">
-      <TopBar sampleName={sampleName} meta={meta} onLoad={loadSfz} />
+      <TopBar
+        productName={appInfo.productName}
+        sampleName={sampleName}
+        meta={meta}
+        onLoad={loadSfz}
+      />
 
       <main className="app-main">
-        <OutputModule />
+        {/* CONTROLS — auto-generated CC controls (SMPL-85). */}
+        <PanelSection
+          title="CONTROLS"
+          area="cc"
+          placeholder
+          hint="Auto-generated CC controls"
+        />
+
+        <div className="center-stack">
+          <OutputModule />
+          {/* ENGINE — oversampling / preload / quality (SMPL-86). */}
+          <PanelSection
+            title="ENGINE"
+            placeholder
+            hint="Oversampling · preload · quality"
+          />
+          {/* TUNING — Scala / root key / A4 / stretch (SMPL-87). */}
+          <PanelSection
+            title="TUNING"
+            placeholder
+            hint="Scala · root key · A4 · stretch"
+          />
+        </div>
+
+        {/* INSTRUMENT INFO — full sfizz stats (SMPL-83). */}
+        <PanelSection
+          title="INSTRUMENT INFO"
+          area="info"
+          placeholder
+          hint="Regions · groups · sample rate"
+        />
+
+        {/* KEYBOARD — playable on-screen keyboard (SMPL-88). */}
+        <PanelSection
+          title="KEYBOARD"
+          area="keyboard"
+          placeholder
+          hint="Playable on-screen keyboard"
+        />
       </main>
 
       <footer className="app-footer">
-        <span className="brand">SAMPLE MACHINE PLAYER</span>
+        <span className="brand">{appInfo.productName.toUpperCase()}</span>
         <span className="voices-readout">
           ACTIVE VOICES <strong>{activeVoices}</strong>
         </span>
-        <span>v0.1.0</span>
+        <span>{appInfo.version ? `v${appInfo.version}` : ""}</span>
       </footer>
     </div>
   );
@@ -88,7 +145,7 @@ function OutputModule() {
   const mpe = useComboBoxParam(PARAM_MPE_MODE, 2);
 
   return (
-    <ParamModule title="OUTPUT">
+    <PanelSection title="OUTPUT" className="output-panel">
       <Knob
         label="GAIN"
         value={gain.value}
@@ -126,6 +183,6 @@ function OutputModule() {
       <div style={{ flexBasis: "100%" }}>
         <LevelMeter eventId={EVT_METER} />
       </div>
-    </ParamModule>
+    </PanelSection>
   );
 }

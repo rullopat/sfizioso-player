@@ -42,10 +42,12 @@ private:
     ResourceResult getResource (const juce::String& url);
     void timerCallback() override;
 
-    void handleLoadSfz   (const juce::Array<juce::var>& args,
-                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
-    void handleGetStatus (const juce::Array<juce::var>& args,
-                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void handleLoadSfz    (const juce::Array<juce::var>& args,
+                           juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void handleGetStatus  (const juce::Array<juce::var>& args,
+                           juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void handleGetAppInfo (const juce::Array<juce::var>& args,
+                           juce::WebBrowserComponent::NativeFunctionCompletion completion);
 
     juce::var makeStatusObject (bool ok) const;
 

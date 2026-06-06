@@ -1,12 +1,13 @@
 import "../styles/topbar.css";
 
 interface Props {
+  productName: string;
   sampleName: string;
   meta: string;
   onLoad: () => void;
 }
 
-export function TopBar({ sampleName, meta, onLoad }: Props) {
+export function TopBar({ productName, sampleName, meta, onLoad }: Props) {
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -21,7 +22,7 @@ export function TopBar({ sampleName, meta, onLoad }: Props) {
             />
           </svg>
         </div>
-        <span className="logo-text">SAMPLE MACHINE PLAYER</span>
+        <span className="logo-text">{productName.toUpperCase()}</span>
       </div>
 
       <div className="topbar-center">

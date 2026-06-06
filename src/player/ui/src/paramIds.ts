@@ -5,9 +5,12 @@ export const PARAM_GAIN_DB = "gainDb";
 export const PARAM_POLYPHONY = "polyphony";
 export const PARAM_MPE_MODE = "mpeMode";
 
-// Native function names registered by PlayerEditor::registerNativeFunctions.
+// Native function names registered inline in the PlayerEditor constructor
+// (juce::WebBrowserComponent::Options::withNativeFunction). Keep byte-identical
+// to the C++ side.
 export const FN_LOAD_SFZ = "loadSfz";
 export const FN_GET_STATUS = "getStatus";
+export const FN_GET_APP_INFO = "getAppInfo";
 
 // Event IDs emitted from PlayerEditor::timerCallback / native fn responses.
 export const EVT_VOICES = "voices";

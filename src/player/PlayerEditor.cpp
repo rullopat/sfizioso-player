@@ -8,8 +8,14 @@ namespace samplemachine
 
 namespace
 {
-    constexpr int kEditorBaseWidth  = 720;
-    constexpr int kEditorHeight     = 480;
+    // SMPL-82 — the multi-panel shell (CONTROLS / OUTPUT+ENGINE+TUNING / INFO
+    // over a full-width KEYBOARD row) needs far more room than the original
+    // single OUTPUT strip. The editor is resizable; the React layout is a
+    // responsive CSS grid, so it reflows to whatever size the user picks.
+    constexpr int kEditorBaseWidth  = 1180;
+    constexpr int kEditorHeight     = 720;
+    constexpr int kEditorMinWidth   = 1000;
+    constexpr int kEditorMinHeight  = 640;
     constexpr int kDebugPanelWidth  = 360;
     // 30 Hz keeps the meter responsive without flooding the message thread;
     // the active-voices readout is fine at the same rate.
@@ -50,7 +56,10 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
                 { handleLoadSfz (args, std::move (completion)); })
             .withNativeFunction ("getStatus",
                 [this] (const juce::Array<juce::var>& args, auto completion)
-                { handleGetStatus (args, std::move (completion)); }));
+                { handleGetStatus (args, std::move (completion)); })
+            .withNativeFunction ("getAppInfo",
+                [this] (const juce::Array<juce::var>& args, auto completion)
+                { handleGetAppInfo (args, std::move (completion)); }));
 
     addAndMakeVisible (*webView);
 
@@ -64,12 +73,18 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
 
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 
-    int width = kEditorBaseWidth;
+    int width    = kEditorBaseWidth;
+    int minWidth = kEditorMinWidth;
 #if SAMPLEMACHINE_DEBUG_MIDI_PANEL
     debugPanel = std::make_unique<DebugMidiPanel> (processor.getEngine());
     addAndMakeVisible (*debugPanel);
-    width += kDebugPanelWidth;
+    width    += kDebugPanelWidth;
+    minWidth += kDebugPanelWidth;
 #endif
+
+    // The WebView layout is a responsive CSS grid — let the user resize.
+    setResizable (true, false);
+    setResizeLimits (minWidth, kEditorMinHeight, 2400, 1600);
     setSize (width, kEditorHeight);
 
     startTimerHz (kTelemetryTimerHz);
@@ -154,6 +169,17 @@ void PlayerEditor::handleGetStatus (const juce::Array<juce::var>&,
                                     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
     completion (makeStatusObject (true));
+}
+
+void PlayerEditor::handleGetAppInfo (const juce::Array<juce::var>&,
+                                     juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    // Single source of truth for the wordmark + version: the JUCE plugin
+    // defines (CMake PRODUCT_NAME / VERSION). The UI no longer hardcodes them.
+    juce::DynamicObject::Ptr obj = new juce::DynamicObject();
+    obj->setProperty ("productName", juce::String (JucePlugin_Name));
+    obj->setProperty ("version",     juce::String (JucePlugin_VersionString));
+    completion (juce::var (obj.get()));
 }
 
 void PlayerEditor::handleLoadSfz (const juce::Array<juce::var>&,
