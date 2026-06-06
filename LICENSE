@@ -1,0 +1,23 @@
+Sfizioso Player — licensing
+===========================
+
+This repository is licensed by component:
+
+- BSD 2-Clause License — the shared libraries and UI kit:
+    src/player_core/   (sfizioso engine wrapper)
+    src/core_prefs/    (preference store)
+    src/ui-shared/     (React UI kit + C++/JS bridge)
+  Full text: LICENSE-BSD-2-Clause.txt
+
+- GNU Affero General Public License v3.0 — the application:
+    src/player/        (PlayerProcessor, PlayerEditor, ui/)
+  Full text: LICENSE-AGPL-3.0.txt
+
+Bundled dependencies keep their own licenses:
+
+- external/sfizioso — the sfizioso SFZ engine, an independent fork of sfizz,
+  BSD 2-Clause. See external/sfizioso/LICENSE.md and external/sfizioso/NOTICE.
+- external/JUCE — JUCE, under the JUCE licence (AGPLv3 or commercial). See
+  external/JUCE/LICENSE.md.
+
+See NOTICE for attributions.

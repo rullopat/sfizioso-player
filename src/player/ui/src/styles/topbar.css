@@ -1,0 +1,104 @@
+.topbar {
+  display: grid;
+  /* auto/1fr/auto: left + right take their content width, center claims the rest.
+     A fixed three-column grid starved the wordmark when the editor is narrow
+     (e.g. with the debug panel taking 360px on the right). */
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  height: 52px;
+  padding: 0 16px;
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  border-bottom: 1px solid var(--stroke);
+  box-shadow: var(--shadow-soft);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+  color: white;
+  box-shadow: 0 0 12px var(--accent-glow), var(--inset-stroke);
+}
+
+.logo-text {
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  font-size: 11px;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.topbar-center {
+  display: flex;
+  justify-content: center;
+}
+
+.sample-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 240px;
+  max-width: 520px;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--bg-0);
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  color: var(--text-1);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sample-slot:hover {
+  border-color: var(--stroke-bright);
+  box-shadow: 0 0 0 1px var(--stroke-bright), 0 0 16px rgba(255, 77, 46, 0.08);
+}
+
+.sample-slot-label {
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 0.2em;
+}
+
+.sample-slot-name {
+  flex: 1;
+  text-align: left;
+  color: var(--text-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sample-slot-icon {
+  color: var(--text-3);
+  font-size: 10px;
+}
+
+.topbar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-3);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.topbar-right .meta-line {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}

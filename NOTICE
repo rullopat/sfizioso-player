@@ -1,0 +1,24 @@
+Sfizioso Player
+===============
+
+This product is part of the Sfizioso project.
+
+Components and their licenses:
+
+- src/player_core, src/core_prefs, src/ui-shared — BSD 2-Clause
+  (LICENSE-BSD-2-Clause.txt).
+- src/player (the Sfizioso Player application) — GNU AGPL v3.0
+  (LICENSE-AGPL-3.0.txt).
+
+Bundled dependencies:
+
+- sfizioso (external/sfizioso) — an independent fork of the sfizz SFZ engine
+  (https://github.com/sfztools/sfizz), BSD 2-Clause. Not endorsed by, nor
+  affiliated with, the sfizz authors. See external/sfizioso/NOTICE.
+
+- JUCE (external/JUCE) — (c) Raw Material Software Limited and the JUCE
+  contributors, used under the JUCE licence (AGPLv3 or a commercial JUCE
+  licence). See external/JUCE/LICENSE.md.
+
+"SFZ" is the instrument file format. "sfizz" is the upstream engine project.
+"sfizioso" is the name of this project's engine fork and player.

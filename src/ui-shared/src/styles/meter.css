@@ -1,0 +1,114 @@
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 20px;
+  padding: 0 6px 4px;
+}
+
+/* Compact vertical variant (SMPL-74): two bottom-anchored bars, no scale. */
+.meter-vertical {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 3px;
+  margin-top: 0;
+  padding: 0;
+  height: 38px;
+}
+.meter-vbar {
+  width: 7px;
+  height: 100%;
+  background: var(--bg-0);
+  border: 1px solid var(--stroke);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+.meter-vfill {
+  width: 100%;
+  background: linear-gradient(0deg, var(--accent-dim) 0%, var(--accent) 70%, #ffd28a 95%);
+  box-shadow: 0 0 6px var(--accent-glow);
+  transition: height 90ms linear;
+}
+
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meter-channel-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-3);
+  width: 10px;
+  text-align: right;
+}
+
+.meter-channel {
+  position: relative;
+  flex: 1;
+  height: 5px;
+  background: var(--bg-0);
+  border: 1px solid var(--stroke);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    var(--accent-dim) 0%,
+    var(--accent) 65%,
+    #ffd28a 95%
+  );
+  box-shadow: 0 0 6px var(--accent-glow);
+  /* Falling values get the css transition; rising values jump because the
+     audio side already gives us max-since-last-emit. */
+  transition: width 90ms linear;
+}
+
+/* Scale row sits below the bars and uses the same left-padding (spacer matches
+   the L/R channel-label width) so tick marks align to bar positions. */
+.meter-scale-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.meter-scale-spacer {
+  width: 10px;
+}
+
+.meter-scale {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: var(--text-3);
+}
+
+.meter-scale-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.meter-scale-tick.is-start {
+  left: 0;
+  transform: none;
+}
+
+.meter-scale-tick.is-end {
+  right: 0;
+  left: auto;
+  transform: none;
+}

@@ -1,0 +1,37 @@
+.module {
+  position: relative;
+  padding: 18px 22px 22px;
+  background: linear-gradient(180deg, var(--panel-raised) 0%, var(--panel) 100%);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  box-shadow: var(--shadow-deep), var(--inset-stroke);
+  min-width: 480px;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.module-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--text-1);
+}
+
+.module-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--stroke) 0%, transparent 100%);
+}
+
+.module-body {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
