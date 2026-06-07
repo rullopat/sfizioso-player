@@ -1,0 +1,29 @@
+/* SMPL-90 — MPE settings panel. */
+.mpe-readout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stroke);
+}
+
+.mpe-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex: 0 0 auto;
+}
+.mpe-dot.is-on {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.mpe-eff {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}

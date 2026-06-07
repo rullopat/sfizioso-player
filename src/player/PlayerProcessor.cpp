@@ -7,11 +7,6 @@
 namespace samplemachine
 {
 
-// MPE 1.0 default per-note pitch bend range (semitones). Mirrors the
-// rompler's manifest-driven kDefaultBendRange but lives as a constant
-// here because the generic player has no per-binary brand config.
-static constexpr int kPlayerDefaultMpeBendRange = 48;
-
 // SMPL-89 — recent-files persistence (global, cross-session) via the shared
 // PreferenceStore, distinct from the per-instance sfzPath in DAW state.
 static constexpr const char* kRecentFilesKey = "player_recent_files";
@@ -39,13 +34,10 @@ PlayerProcessor::PlayerProcessor()
 
     engine.connectApvts (apvts);
 
-    // Apply the initial APVTS-resident mpeMode value — defaults to Full
-    // per createParameterLayout(). Saved DAW state will overwrite via
-    // setStateInformation and the listener picks that up.
-    if (auto* raw = apvts.getRawParameterValue (PlayerEngineParamIds::mpeMode))
-        engine.setMpeMode (static_cast<MpeMode> (static_cast<int> (raw->load())),
-                           kPlayerDefaultMpeBendRange);
-
+    // applyEngineSettings() (which ends in applyMpeSettings) pushes the initial
+    // APVTS state — incl. mpeMode (defaults to Full per createParameterLayout)
+    // and the SMPL-90 MPE bend/RPN settings — into the engine. Saved DAW state
+    // overwrites via setStateInformation and the listeners pick that up.
     applyEngineSettings();
 
     for (const char* id : { PlayerEngineParamIds::polyphony,
@@ -57,7 +49,11 @@ PlayerProcessor::PlayerProcessor()
                             PlayerEngineParamIds::freewheel,
                             PlayerEngineParamIds::scalaRootKey,
                             PlayerEngineParamIds::tuningFrequency,
-                            PlayerEngineParamIds::stretchTuning })
+                            PlayerEngineParamIds::stretchTuning,
+                            PlayerEngineParamIds::mpeMasterBend,
+                            PlayerEngineParamIds::mpePerNoteBend,
+                            PlayerEngineParamIds::mpeIgnoreMasterRpn,
+                            PlayerEngineParamIds::mpeIgnorePerNoteRpn })
         apvts.addParameterListener (id, this);
 }
 
@@ -72,7 +68,11 @@ PlayerProcessor::~PlayerProcessor()
                             PlayerEngineParamIds::freewheel,
                             PlayerEngineParamIds::scalaRootKey,
                             PlayerEngineParamIds::tuningFrequency,
-                            PlayerEngineParamIds::stretchTuning })
+                            PlayerEngineParamIds::stretchTuning,
+                            PlayerEngineParamIds::mpeMasterBend,
+                            PlayerEngineParamIds::mpePerNoteBend,
+                            PlayerEngineParamIds::mpeIgnoreMasterRpn,
+                            PlayerEngineParamIds::mpeIgnorePerNoteRpn })
         apvts.removeParameterListener (id, this);
 }
 
@@ -116,7 +116,49 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlayerProcessor::createParam
                                                       "Stretch Tuning",
                                                       juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f),
                                                       0.0f));
+
+    // SMPL-90 MPE settings (player-app-only; the rompler keeps its single
+    // mpeMode + manifest bend range). MPE 1.0 defaults: master 2, per-note 48.
+    layout.add (
+        std::make_unique<juce::AudioParameterInt>    (juce::ParameterID { mpeMasterBend, 1 },
+                                                      "MPE Master Bend (st)", 0, 96, 2),
+        std::make_unique<juce::AudioParameterInt>    (juce::ParameterID { mpePerNoteBend, 1 },
+                                                      "MPE Per-Note Bend (st)", 0, 96, 48),
+        std::make_unique<juce::AudioParameterBool>   (juce::ParameterID { mpeIgnoreMasterRpn, 1 },
+                                                      "MPE Ignore Master RPN", false),
+        std::make_unique<juce::AudioParameterBool>   (juce::ParameterID { mpeIgnorePerNoteRpn, 1 },
+                                                      "MPE Ignore Per-Note RPN", false));
     return layout;
+}
+
+void PlayerProcessor::applyMpeSettings()
+{
+    using namespace PlayerEngineParamIds;
+    auto vi = [this] (const char* id) -> int
+    {
+        if (auto* r = apvts.getRawParameterValue (id)) return static_cast<int> (r->load());
+        return 0;
+    };
+
+    const MpeMode mode      = static_cast<MpeMode> (vi (mpeMode));
+    const bool ignoreMaster = vi (mpeIgnoreMasterRpn) != 0;
+    const bool ignorePerNote = vi (mpeIgnorePerNoteRpn) != 0;
+    const int  masterParam  = vi (mpeMasterBend);
+    const int  perNoteParam = vi (mpePerNoteBend);
+
+    // Enable (mode==Full) + assert a per-note baseline; setMpeMode keeps its
+    // rompler-facing signature, so we pass the per-note param through it.
+    engine.setMpeMode (mode, perNoteParam);
+
+    // RPN auto-config: "ignore" ON  -> auto-config OFF (panel value pins).
+    engine.setMpeMasterBendAutoConfig (! ignoreMaster);
+    engine.setMpePerNoteBendAutoConfig (! ignorePerNote);
+
+    // Pin a range only where the user chose to override RPN; otherwise keep the
+    // engine's current (RPN-driven) value so incoming MCM/RPN isn't clobbered.
+    const float master  = ignoreMaster  ? static_cast<float> (masterParam)  : engine.getMpeMasterBendRange();
+    const float perNote = ignorePerNote ? static_cast<float> (perNoteParam) : engine.getMpePerNoteBendRange();
+    engine.setMpeBendRanges (master, perNote);
 }
 
 void PlayerProcessor::applyEngineSettings()
@@ -146,6 +188,8 @@ void PlayerProcessor::applyEngineSettings()
     const auto scala = apvts.state.getProperty (PlayerStateProps::scalaPath).toString();
     if (scala.isNotEmpty() && juce::File (scala).existsAsFile())
         loadScalaFile (juce::File (scala));
+
+    applyMpeSettings(); // SMPL-90 — enable + bend ranges + RPN auto-config
 }
 
 bool PlayerProcessor::loadSfzFile (const juce::File& file)
@@ -367,6 +411,17 @@ void PlayerProcessor::parameterChanged (const juce::String& parameterID, float n
 {
     using namespace PlayerEngineParamIds;
 
+    // SMPL-90 — any MPE param re-pushes the whole consistent MPE state
+    // (enable + bend ranges + RPN auto-config). Non-RT-safe → bracketed.
+    if (parameterID == mpeMode || parameterID == mpeMasterBend || parameterID == mpePerNoteBend
+        || parameterID == mpeIgnoreMasterRpn || parameterID == mpeIgnorePerNoteRpn)
+    {
+        suspendProcessing (true);
+        applyMpeSettings();
+        suspendProcessing (false);
+        return;
+    }
+
     // RT-safe scalar setters — no suspend needed.
     if (parameterID == tuningFrequency)        { engine.setTuningFrequency (newValue); return; }
     if (parameterID == stretchTuning)          { engine.setStretchTuning (newValue);   return; }
@@ -376,8 +431,6 @@ void PlayerProcessor::parameterChanged (const juce::String& parameterID, float n
     suspendProcessing (true);
     if (parameterID == polyphony)
         engine.setNumVoices (static_cast<int> (newValue));
-    else if (parameterID == mpeMode)
-        engine.setMpeMode (static_cast<MpeMode> (static_cast<int> (newValue)), kPlayerDefaultMpeBendRange);
     else if (parameterID == oversampling)
         engine.setOversamplingFactor (1 << static_cast<int> (newValue));
     else if (parameterID == preloadSize)

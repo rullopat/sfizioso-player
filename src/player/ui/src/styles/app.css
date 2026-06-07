@@ -18,7 +18,7 @@
   display: grid;
   padding: 16px;
   gap: 16px;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(260px, 340px);
   grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     "cc center info"
@@ -27,6 +27,16 @@
 
 .center-stack {
   grid-area: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* SMPL-90 — right column stacks INSTRUMENT INFO over the MPE panel. */
+.right-stack {
+  grid-area: info;
   display: flex;
   flex-direction: column;
   gap: 16px;

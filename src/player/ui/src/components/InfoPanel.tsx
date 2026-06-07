@@ -21,7 +21,7 @@ export function InfoPanel({ status, activeVoices }: Props) {
   ];
 
   return (
-    <PanelSection title="INSTRUMENT INFO" area="info">
+    <PanelSection title="INSTRUMENT INFO">
       <div className="info-grid">
         {rows.map(([label, value]) => (
           <div className="info-row" key={label}>

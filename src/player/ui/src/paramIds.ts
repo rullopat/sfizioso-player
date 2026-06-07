@@ -20,6 +20,12 @@ export const PARAM_SCALA_ROOT_KEY = "scalaRootKey";
 export const PARAM_TUNING_FREQ = "tuningFrequency";
 export const PARAM_STRETCH = "stretchTuning";
 
+// SMPL-90 MPE settings.
+export const PARAM_MPE_MASTER_BEND = "mpeMasterBend";
+export const PARAM_MPE_PERNOTE_BEND = "mpePerNoteBend";
+export const PARAM_MPE_IGNORE_MASTER = "mpeIgnoreMasterRpn";
+export const PARAM_MPE_IGNORE_PERNOTE = "mpeIgnorePerNoteRpn";
+
 // --- native functions ------------------------------------------------------
 export const FN_LOAD_SFZ = "loadSfz";
 export const FN_LOAD_SFZ_PATH = "loadSfzPath";   // SMPL-89
@@ -43,3 +49,4 @@ export const EVT_SFZ_LOADED = "sfzLoaded";       // SMPL-85 / 89
 export const EVT_SFZ_RELOADED = "sfzReloaded";   // SMPL-89
 export const EVT_NOTES = "notes";                // SMPL-88
 export const EVT_TUNING = "tuning";              // SMPL-87
+export const EVT_MPE = "mpe";                    // SMPL-90 effective-bend readouts

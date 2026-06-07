@@ -93,6 +93,7 @@ private:
     // engine. Called once after construction and again after state restore so
     // APVTS is the authoritative source for the non-getter-backed settings.
     void applyEngineSettings();
+    void applyMpeSettings();    // SMPL-90 — push the full MPE state from APVTS
     void appendRecentFile (const juce::File& file);
 
     PlayerEngine engine;

@@ -41,6 +41,13 @@ namespace PlayerEngineParamIds
     inline constexpr const char* scalaRootKey    = "scalaRootKey";
     inline constexpr const char* tuningFrequency = "tuningFrequency";
     inline constexpr const char* stretchTuning   = "stretchTuning";
+
+    // SMPL-90 MPE settings (player-app-only registration; the rompler keeps
+    // its single mpeMode + manifest bend range).
+    inline constexpr const char* mpeMasterBend       = "mpeMasterBend";
+    inline constexpr const char* mpePerNoteBend       = "mpePerNoteBend";
+    inline constexpr const char* mpeIgnoreMasterRpn  = "mpeIgnoreMasterRpn";
+    inline constexpr const char* mpeIgnorePerNoteRpn = "mpeIgnorePerNoteRpn";
 }
 
 /**
@@ -164,6 +171,21 @@ public:
      */
     void setMpeMode (MpeMode mode, int perNoteBendRangeSemitones = 48);
     MpeMode getMpeMode() const noexcept { return mpeMode; }
+
+    /**
+     * @brief SMPL-90 — granular MPE bend-range + RPN auto-config, for the
+     * player's MPE panel. Additive over setMpeMode (which the rompler uses
+     * unchanged). All no-ops on a non-fork build, like setMpeMode.
+     *  - setMpeBendRanges sets the master / per-note pitch-bend range (st).
+     *  - the AutoConfig setters gate whether incoming RPN 0 (Pitch Bend
+     *    Sensitivity) updates the master / per-note range (default: enabled).
+     */
+    void  setMpeBendRanges (float masterSemitones, float perNoteSemitones);
+    float getMpeMasterBendRange() const;
+    float getMpePerNoteBendRange() const;
+    bool  getMpeEnabled() const;
+    void  setMpeMasterBendAutoConfig (bool enabled);
+    void  setMpePerNoteBendAutoConfig (bool enabled);
 
     /** UI access for the in-plugin MIDI debug panel (test brands only). */
     DebugMidiCapture& getDebugMidiCapture() noexcept { return debugMidi; }

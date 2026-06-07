@@ -63,6 +63,10 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             .withOptionsFrom (rootKeyRelay)
             .withOptionsFrom (tuningFreqRelay)
             .withOptionsFrom (stretchRelay)
+            .withOptionsFrom (mpeMasterRelay)
+            .withOptionsFrom (mpePerNoteRelay)
+            .withOptionsFrom (mpeIgnoreMasterRelay)
+            .withOptionsFrom (mpeIgnorePerNoteRelay)
             .withNativeFunction ("loadSfz",       [this] (auto& a, auto c) { handleLoadSfz       (a, std::move (c)); })
             .withNativeFunction ("loadSfzPath",   [this] (auto& a, auto c) { handleLoadSfzPath   (a, std::move (c)); })
             .withNativeFunction ("getStatus",     [this] (auto& a, auto c) { handleGetStatus     (a, std::move (c)); })
@@ -93,6 +97,16 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
     rootKeyAttach     = slider (PlayerEngineParamIds::scalaRootKey,          rootKeyRelay);
     tuningFreqAttach  = slider (PlayerEngineParamIds::tuningFrequency,       tuningFreqRelay);
     stretchAttach     = slider (PlayerEngineParamIds::stretchTuning,         stretchRelay);
+    mpeMasterAttach   = slider (PlayerEngineParamIds::mpeMasterBend,         mpeMasterRelay);
+    mpePerNoteAttach  = slider (PlayerEngineParamIds::mpePerNoteBend,        mpePerNoteRelay);
+
+    auto toggle = [&apvts] (const char* id, juce::WebToggleButtonRelay& relay)
+    {
+        return std::make_unique<juce::WebToggleButtonParameterAttachment> (
+            *apvts.getParameter (id), relay, nullptr);
+    };
+    mpeIgnoreMasterAttach  = toggle (PlayerEngineParamIds::mpeIgnoreMasterRpn,  mpeIgnoreMasterRelay);
+    mpeIgnorePerNoteAttach = toggle (PlayerEngineParamIds::mpeIgnorePerNoteRpn, mpeIgnorePerNoteRelay);
 
     mpeModeAttach = std::make_unique<juce::WebComboBoxParameterAttachment> (
         *apvts.getParameter (PlayerEngineParamIds::mpeMode), mpeModeRelay, nullptr);
@@ -222,6 +236,16 @@ void PlayerEditor::timerCallback()
     meter->setProperty ("peakL", static_cast<double> (processor.consumePeakL()));
     meter->setProperty ("peakR", static_cast<double> (processor.consumePeakR()));
     webView->emitEventIfBrowserIsVisible ("meter", juce::var (meter.get()));
+
+    // SMPL-90 — effective MPE state (post-RPN) for the MPE panel readouts.
+    {
+        auto& eng = processor.getEngine();
+        juce::DynamicObject::Ptr mpe = new juce::DynamicObject();
+        mpe->setProperty ("enabled",     eng.getMpeEnabled());
+        mpe->setProperty ("masterBend",  static_cast<double> (eng.getMpeMasterBendRange()));
+        mpe->setProperty ("perNoteBend", static_cast<double> (eng.getMpePerNoteBendRange()));
+        webView->emitEventIfBrowserIsVisible ("mpe", juce::var (mpe.get()));
+    }
 
     // SMPL-88 — keys this UI is holding, for the on-screen keyboard highlight.
     {

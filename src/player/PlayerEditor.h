@@ -101,6 +101,10 @@ private:
     juce::WebSliderRelay        rootKeyRelay      { "scalaRootKey" };
     juce::WebSliderRelay        tuningFreqRelay   { "tuningFrequency" };
     juce::WebSliderRelay        stretchRelay      { "stretchTuning" };
+    juce::WebSliderRelay        mpeMasterRelay    { "mpeMasterBend" };
+    juce::WebSliderRelay        mpePerNoteRelay   { "mpePerNoteBend" };
+    juce::WebToggleButtonRelay  mpeIgnoreMasterRelay  { "mpeIgnoreMasterRpn" };
+    juce::WebToggleButtonRelay  mpeIgnorePerNoteRelay { "mpeIgnorePerNoteRpn" };
 
     std::unique_ptr<juce::WebBrowserComponent> webView;
 
@@ -115,6 +119,10 @@ private:
     std::unique_ptr<juce::WebSliderParameterAttachment>       rootKeyAttach;
     std::unique_ptr<juce::WebSliderParameterAttachment>       tuningFreqAttach;
     std::unique_ptr<juce::WebSliderParameterAttachment>       stretchAttach;
+    std::unique_ptr<juce::WebSliderParameterAttachment>       mpeMasterAttach;
+    std::unique_ptr<juce::WebSliderParameterAttachment>       mpePerNoteAttach;
+    std::unique_ptr<juce::WebToggleButtonParameterAttachment> mpeIgnoreMasterAttach;
+    std::unique_ptr<juce::WebToggleButtonParameterAttachment> mpeIgnorePerNoteAttach;
 
     std::unique_ptr<juce::FileChooser> chooser;
 

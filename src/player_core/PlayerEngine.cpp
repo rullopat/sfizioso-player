@@ -291,4 +291,59 @@ void PlayerEngine::setMpeMode (MpeMode mode, int perNoteBendRangeSemitones)
 #endif
 }
 
+// --- SMPL-90 granular MPE bend range + RPN auto-config ---------------------
+void PlayerEngine::setMpeBendRanges (float masterSemitones, float perNoteSemitones)
+{
+#if SAMPLEMACHINE_SFIZZ_HAS_MPE
+    synth->setMPEPitchBendRange (masterSemitones, perNoteSemitones);
+#else
+    juce::ignoreUnused (masterSemitones, perNoteSemitones);
+#endif
+}
+
+float PlayerEngine::getMpeMasterBendRange() const
+{
+#if SAMPLEMACHINE_SFIZZ_HAS_MPE
+    return synth->getMPEMasterPitchBendRange();
+#else
+    return 0.0f;
+#endif
+}
+
+float PlayerEngine::getMpePerNoteBendRange() const
+{
+#if SAMPLEMACHINE_SFIZZ_HAS_MPE
+    return synth->getMPEPerNotePitchBendRange();
+#else
+    return 0.0f;
+#endif
+}
+
+bool PlayerEngine::getMpeEnabled() const
+{
+#if SAMPLEMACHINE_SFIZZ_HAS_MPE
+    return synth->getMPEEnabled();
+#else
+    return false;
+#endif
+}
+
+void PlayerEngine::setMpeMasterBendAutoConfig (bool enabled)
+{
+#if SAMPLEMACHINE_SFIZZ_HAS_MPE
+    synth->setMPEMasterBendAutoConfigEnabled (enabled);
+#else
+    juce::ignoreUnused (enabled);
+#endif
+}
+
+void PlayerEngine::setMpePerNoteBendAutoConfig (bool enabled)
+{
+#if SAMPLEMACHINE_SFIZZ_HAS_MPE
+    synth->setMPEPerNoteBendAutoConfigEnabled (enabled);
+#else
+    juce::ignoreUnused (enabled);
+#endif
+}
+
 } // namespace samplemachine

@@ -4,17 +4,16 @@ import { PanelSection } from "./components/PanelSection";
 import { InfoPanel } from "./components/InfoPanel";
 import { EnginePanel } from "./components/EnginePanel";
 import { TuningPanel } from "./components/TuningPanel";
+import { MpePanel } from "./components/MpePanel";
 import { CcControlsPanel } from "./components/CcControlsPanel";
 import { Knob } from "@shared/components/Knob";
-import { Segmented } from "@shared/components/Segmented";
 import { LevelMeter } from "@shared/components/LevelMeter";
 import { Keyboard } from "@shared/components/Keyboard";
-import { useSliderParam, useComboBoxParam } from "@shared/hooks/useParam";
+import { useSliderParam } from "@shared/hooks/useParam";
 import { callNative, onBackendEvent } from "@shared/juceBridge";
 import {
   PARAM_GAIN_DB,
   PARAM_POLYPHONY,
-  PARAM_MPE_MODE,
   FN_LOAD_SFZ,
   FN_GET_STATUS,
   FN_GET_APP_INFO,
@@ -98,8 +97,11 @@ export default function App() {
           <TuningPanel />
         </div>
 
-        {/* INSTRUMENT INFO — full sfizz stats (SMPL-83). */}
-        <InfoPanel status={status} activeVoices={activeVoices} />
+        {/* Right column: instrument info (SMPL-83) over the MPE panel (SMPL-90). */}
+        <div className="right-stack">
+          <InfoPanel status={status} activeVoices={activeVoices} />
+          <MpePanel />
+        </div>
 
         {/* KEYBOARD — playable on-screen keyboard (SMPL-88). */}
         <PanelSection title="KEYBOARD" area="keyboard" className="keyboard-panel">
@@ -127,7 +129,6 @@ export default function App() {
 function OutputModule() {
   const gain = useSliderParam(PARAM_GAIN_DB, 0);
   const poly = useSliderParam(PARAM_POLYPHONY, 16);
-  const mpe = useComboBoxParam(PARAM_MPE_MODE, 2);
 
   return (
     <PanelSection title="OUTPUT" className="output-panel">
@@ -150,20 +151,6 @@ function OutputModule() {
         onDragEnd={poly.dragEnd}
         large
         format={(v) => `${Math.round(v)}`}
-      />
-      <Segmented
-        label="MPE"
-        selected={mpe.index}
-        options={
-          mpe.choices.length > 0
-            ? mpe.choices.map((label, i) => ({ label: label.toUpperCase(), value: i }))
-            : [
-                { label: "OFF", value: 0 },
-                { label: "PRES", value: 1 },
-                { label: "FULL", value: 2 },
-              ]
-        }
-        onSelect={mpe.setIndex}
       />
       {/* SMPL-84 — output level meter, in the OUTPUT monitor region near gain. */}
       <div style={{ flexBasis: "100%" }}>
