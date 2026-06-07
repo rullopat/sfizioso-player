@@ -1,60 +1,87 @@
 import { useEffect, useState } from "react";
 import { TopBar } from "./components/TopBar";
-import { ParamModule } from "@shared/components/ParamModule";
+import { PanelSection } from "./components/PanelSection";
+import { InfoPanel } from "./components/InfoPanel";
+import { EnginePanel } from "./components/EnginePanel";
+import { TuningPanel } from "./components/TuningPanel";
+import { MpePanel } from "./components/MpePanel";
+import { ExperimentalPanel } from "./components/ExperimentalPanel";
+import { CcControlsPanel } from "./components/CcControlsPanel";
 import { Knob } from "@shared/components/Knob";
-import { Segmented } from "@shared/components/Segmented";
 import { LevelMeter } from "@shared/components/LevelMeter";
-import { useSliderParam, useComboBoxParam } from "@shared/hooks/useParam";
+import { Keyboard } from "@shared/components/Keyboard";
+import { useSliderParam } from "@shared/hooks/useParam";
 import { callNative, onBackendEvent } from "@shared/juceBridge";
 import {
   PARAM_GAIN_DB,
   PARAM_POLYPHONY,
-  PARAM_MPE_MODE,
   FN_LOAD_SFZ,
   FN_GET_STATUS,
+  FN_GET_APP_INFO,
+  FN_GET_KEY_LABELS,
+  FN_NOTE_ON,
+  FN_NOTE_OFF,
   EVT_VOICES,
   EVT_METER,
+  EVT_NOTES,
+  EVT_SFZ_LOADED,
+  EVT_SFZ_RELOADED,
 } from "./paramIds";
+import { Status, EMPTY_STATUS } from "./types";
 import "./styles/app.css";
 
-type Status = {
-  sfzPath: string;
-  fileName: string;
-  numRegions: number;
-  numPreloadedSamples: number;
+type AppInfo = {
+  productName: string;
+  version: string;
 };
 
-const EMPTY_STATUS: Status = {
-  sfzPath: "",
-  fileName: "",
-  numRegions: 0,
-  numPreloadedSamples: 0,
-};
+// Fallback until getAppInfo resolves; the real values come from the JUCE
+// plugin defines (CMake PRODUCT_NAME / VERSION) — never hardcode the brand.
+const DEFAULT_APP_INFO: AppInfo = { productName: "Sfizioso Player", version: "" };
+
+const TABS = [
+  { id: "output", label: "OUTPUT" },
+  { id: "engine", label: "ENGINE" },
+  { id: "tuning", label: "TUNING" },
+  { id: "mpe", label: "MPE" },
+  { id: "info", label: "INFO" },
+  { id: "experimental", label: "EXPERIMENTAL" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
 export default function App() {
   const [status, setStatus] = useState<Status>(EMPTY_STATUS);
   const [activeVoices, setActiveVoices] = useState(0);
+  const [appInfo, setAppInfo] = useState<AppInfo>(DEFAULT_APP_INFO);
+  const [tab, setTab] = useState<TabId>("output");
 
   useEffect(() => {
     callNative<Status>(FN_GET_STATUS).then((s) => {
       if (s) setStatus(s);
     });
-    const unsub = onBackendEvent<{ active: number }>(EVT_VOICES, (e) =>
+    callNative<AppInfo>(FN_GET_APP_INFO).then((a) => {
+      if (a?.productName) setAppInfo(a);
+    });
+    const offVoices = onBackendEvent<{ active: number }>(EVT_VOICES, (e) =>
       setActiveVoices(e.active)
     );
-    return unsub;
+    // SMPL-89 — re-hydrate the status strip + info panel on any (re)load,
+    // including recent-files clicks, drag-drop, and on-disk auto-reload.
+    const apply = (s: Status) => {
+      if (s) setStatus(s);
+    };
+    const offLoaded = onBackendEvent<Status>(EVT_SFZ_LOADED, apply);
+    const offReloaded = onBackendEvent<Status>(EVT_SFZ_RELOADED, apply);
+    return () => {
+      offVoices();
+      offLoaded();
+      offReloaded();
+    };
   }, []);
 
   const loadSfz = async () => {
-    const res = await callNative<Status & { ok: boolean }>(FN_LOAD_SFZ);
-    if (res?.ok) {
-      setStatus({
-        sfzPath: res.sfzPath,
-        fileName: res.fileName,
-        numRegions: res.numRegions,
-        numPreloadedSamples: res.numPreloadedSamples,
-      });
-    }
+    const res = await callNative<Status>(FN_LOAD_SFZ);
+    if (res?.ok) setStatus(res);
   };
 
   const sampleName = status.fileName || "No SFZ loaded";
@@ -65,18 +92,58 @@ export default function App() {
 
   return (
     <div className="app noise">
-      <TopBar sampleName={sampleName} meta={meta} onLoad={loadSfz} />
+      <TopBar
+        productName={appInfo.productName}
+        sampleName={sampleName}
+        meta={meta}
+        onLoad={loadSfz}
+      />
 
-      <main className="app-main">
-        <OutputModule />
+      {/* Each section is its own tab; the keyboard stays docked below so it's
+          playable from any tab. */}
+      <nav className="tab-bar">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`tab-btn ${tab === t.id ? "is-active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      <main className="tab-content">
+        {tab === "output" && (
+          <>
+            <OutputModule />
+            <CcControlsPanel />
+          </>
+        )}
+        {tab === "engine" && <EnginePanel />}
+        {tab === "tuning" && <TuningPanel />}
+        {tab === "mpe" && <MpePanel />}
+        {tab === "info" && <InfoPanel status={status} activeVoices={activeVoices} />}
+        {tab === "experimental" && <ExperimentalPanel />}
       </main>
 
+      {/* Docked, always-playable keyboard (SMPL-88). */}
+      <div className="keyboard-dock">
+        <Keyboard
+          noteOnFn={FN_NOTE_ON}
+          noteOffFn={FN_NOTE_OFF}
+          getKeyLabelsFn={FN_GET_KEY_LABELS}
+          notesEvent={EVT_NOTES}
+          loadedEvent={EVT_SFZ_LOADED}
+        />
+      </div>
+
       <footer className="app-footer">
-        <span className="brand">SAMPLE MACHINE PLAYER</span>
+        <span className="brand">{appInfo.productName.toUpperCase()}</span>
         <span className="voices-readout">
           ACTIVE VOICES <strong>{activeVoices}</strong>
         </span>
-        <span>v0.1.0</span>
+        <span>{appInfo.version ? `v${appInfo.version}` : ""}</span>
       </footer>
     </div>
   );
@@ -85,10 +152,9 @@ export default function App() {
 function OutputModule() {
   const gain = useSliderParam(PARAM_GAIN_DB, 0);
   const poly = useSliderParam(PARAM_POLYPHONY, 16);
-  const mpe = useComboBoxParam(PARAM_MPE_MODE, 2);
 
   return (
-    <ParamModule title="OUTPUT">
+    <PanelSection title="OUTPUT" className="output-panel">
       <Knob
         label="GAIN"
         value={gain.value}
@@ -109,23 +175,10 @@ function OutputModule() {
         large
         format={(v) => `${Math.round(v)}`}
       />
-      <Segmented
-        label="MPE"
-        selected={mpe.index}
-        options={
-          mpe.choices.length > 0
-            ? mpe.choices.map((label, i) => ({ label: label.toUpperCase(), value: i }))
-            : [
-                { label: "OFF", value: 0 },
-                { label: "PRES", value: 1 },
-                { label: "FULL", value: 2 },
-              ]
-        }
-        onSelect={mpe.setIndex}
-      />
+      {/* SMPL-84 — output level meter, in the OUTPUT monitor region near gain. */}
       <div style={{ flexBasis: "100%" }}>
         <LevelMeter eventId={EVT_METER} />
       </div>
-    </ParamModule>
+    </PanelSection>
   );
 }

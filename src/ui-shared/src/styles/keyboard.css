@@ -1,0 +1,56 @@
+/* SMPL-88 — on-screen keyboard. Surface-token aware so it themes with the
+   rest of the kit; lit keys glow in the brand accent, unmapped keys dim. */
+.keyboard {
+  width: 100%;
+  height: 100%;
+  min-height: 96px;
+  touch-action: none;
+  user-select: none;
+}
+
+.keyboard-keys {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-0);
+  box-shadow: var(--inset-stroke);
+}
+
+.kbd-white {
+  flex: 1;
+  height: 100%;
+  border-right: 1px solid var(--stroke);
+  background: linear-gradient(180deg, var(--knob-cap-top, #e8e8ec) 0%, var(--knob-cap-bottom, #c4c4cc) 100%);
+  cursor: pointer;
+}
+.kbd-white:last-child { border-right: none; }
+
+.kbd-black {
+  position: absolute;
+  top: 0;
+  height: 62%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #2a2c30 0%, #0a0b0e 100%);
+  border: 1px solid #000;
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.kbd-white.is-lit {
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dim) 100%);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.kbd-black.is-lit {
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dim) 100%);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Keys the loaded instrument does not map. */
+.kbd-white.is-unmapped { filter: brightness(0.55) saturate(0.4); }
+.kbd-black.is-unmapped { filter: brightness(0.6); }

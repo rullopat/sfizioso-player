@@ -9,15 +9,72 @@
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
 }
 
-.app-main {
-  flex: 1;
+/* Tabbed shell — one control section per tab, with the keyboard docked below.
+   Replaces the old all-at-once multi-panel page (too dense). */
+.tab-bar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.tab-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 12px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--text-1); }
+.tab-btn.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-  gap: 16px;
-  overflow: hidden;
+  gap: 22px;
+  padding: 24px;
+}
+
+/* Inside a tab a section fills the area and drops the nested card chrome (the
+   header rule stays as a section label — needed where a tab holds two
+   sections, e.g. OUTPUT + CONTROLS). */
+.tab-content .panel {
+  flex: 1 1 auto;
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+/* OUTPUT is compact — let CONTROLS take the remaining height in the merged tab. */
+.tab-content .output-panel { flex: 0 0 auto; }
+.tab-content .panel-body {
+  justify-content: flex-start;
+  align-content: flex-start;
+  gap: 24px;
+}
+
+/* SMPL-88 — docked, always-playable keyboard. */
+.keyboard-dock {
+  flex: 0 0 auto;
+  height: 132px;
+  padding: 10px 16px;
+  background: var(--bg-1);
+  border-top: 1px solid var(--stroke);
 }
 
 .app-footer {
