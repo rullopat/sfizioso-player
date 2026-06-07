@@ -9,7 +9,7 @@ export function CcControlsPanel() {
   const { controls, values, setCc } = useCcControls();
 
   return (
-    <PanelSection title="CONTROLS" area="cc">
+    <PanelSection title="CONTROLS">
       {controls.length === 0 ? (
         <div className="cc-empty">No mapped controls</div>
       ) : (

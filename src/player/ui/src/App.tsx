@@ -38,10 +38,21 @@ type AppInfo = {
 // plugin defines (CMake PRODUCT_NAME / VERSION) — never hardcode the brand.
 const DEFAULT_APP_INFO: AppInfo = { productName: "Sfizioso Player", version: "" };
 
+const TABS = [
+  { id: "output", label: "OUTPUT" },
+  { id: "controls", label: "CONTROLS" },
+  { id: "engine", label: "ENGINE" },
+  { id: "tuning", label: "TUNING" },
+  { id: "mpe", label: "MPE" },
+  { id: "info", label: "INFO" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
 export default function App() {
   const [status, setStatus] = useState<Status>(EMPTY_STATUS);
   const [activeVoices, setActiveVoices] = useState(0);
   const [appInfo, setAppInfo] = useState<AppInfo>(DEFAULT_APP_INFO);
+  const [tab, setTab] = useState<TabId>("output");
 
   useEffect(() => {
     callNative<Status>(FN_GET_STATUS).then((s) => {
@@ -87,33 +98,39 @@ export default function App() {
         onLoad={loadSfz}
       />
 
-      <main className="app-main">
-        {/* CONTROLS — auto-generated CC controls (SMPL-85). */}
-        <CcControlsPanel />
+      {/* Each section is its own tab; the keyboard stays docked below so it's
+          playable from any tab. */}
+      <nav className="tab-bar">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`tab-btn ${tab === t.id ? "is-active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-        <div className="center-stack">
-          <OutputModule />
-          <EnginePanel />
-          <TuningPanel />
-        </div>
-
-        {/* Right column: instrument info (SMPL-83) over the MPE panel (SMPL-90). */}
-        <div className="right-stack">
-          <InfoPanel status={status} activeVoices={activeVoices} />
-          <MpePanel />
-        </div>
-
-        {/* KEYBOARD — playable on-screen keyboard (SMPL-88). */}
-        <PanelSection title="KEYBOARD" area="keyboard" className="keyboard-panel">
-          <Keyboard
-            noteOnFn={FN_NOTE_ON}
-            noteOffFn={FN_NOTE_OFF}
-            getKeyLabelsFn={FN_GET_KEY_LABELS}
-            notesEvent={EVT_NOTES}
-            loadedEvent={EVT_SFZ_LOADED}
-          />
-        </PanelSection>
+      <main className="tab-content">
+        {tab === "output" && <OutputModule />}
+        {tab === "controls" && <CcControlsPanel />}
+        {tab === "engine" && <EnginePanel />}
+        {tab === "tuning" && <TuningPanel />}
+        {tab === "mpe" && <MpePanel />}
+        {tab === "info" && <InfoPanel status={status} activeVoices={activeVoices} />}
       </main>
+
+      {/* Docked, always-playable keyboard (SMPL-88). */}
+      <div className="keyboard-dock">
+        <Keyboard
+          noteOnFn={FN_NOTE_ON}
+          noteOffFn={FN_NOTE_OFF}
+          getKeyLabelsFn={FN_GET_KEY_LABELS}
+          notesEvent={EVT_NOTES}
+          loadedEvent={EVT_SFZ_LOADED}
+        />
+      </div>
 
       <footer className="app-footer">
         <span className="brand">{appInfo.productName.toUpperCase()}</span>

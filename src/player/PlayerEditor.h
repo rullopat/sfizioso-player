@@ -1,9 +1,5 @@
 #pragma once
 
-#if SAMPLEMACHINE_DEBUG_MIDI_PANEL
- #include <DebugMidiPanel.h>
-#endif
-
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 
@@ -125,10 +121,6 @@ private:
     std::unique_ptr<juce::WebToggleButtonParameterAttachment> mpeIgnorePerNoteAttach;
 
     std::unique_ptr<juce::FileChooser> chooser;
-
-#if SAMPLEMACHINE_DEBUG_MIDI_PANEL
-    std::unique_ptr<DebugMidiPanel> debugPanel;
-#endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PlayerEditor)
 };

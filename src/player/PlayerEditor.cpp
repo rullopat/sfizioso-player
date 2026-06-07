@@ -8,15 +8,13 @@ namespace samplemachine
 
 namespace
 {
-    // SMPL-82 — the multi-panel shell (CONTROLS / OUTPUT+ENGINE+TUNING / INFO
-    // over a full-width KEYBOARD row) needs far more room than the original
-    // single OUTPUT strip. The editor is resizable; the React layout is a
-    // responsive CSS grid, so it reflows to whatever size the user picks.
-    constexpr int kEditorBaseWidth  = 1180;
-    constexpr int kEditorHeight     = 760;
-    constexpr int kEditorMinWidth   = 1000;
-    constexpr int kEditorMinHeight  = 680;
-    constexpr int kDebugPanelWidth  = 360;
+    // Tabbed shell (one control section per tab + a docked keyboard) is far
+    // more compact than the old all-at-once multi-panel page. The editor is
+    // resizable; the React layout reflows to whatever size the user picks.
+    constexpr int kEditorBaseWidth  = 920;
+    constexpr int kEditorHeight     = 640;
+    constexpr int kEditorMinWidth   = 720;
+    constexpr int kEditorMinHeight  = 520;
     // 30 Hz keeps the meter responsive without flooding the message thread;
     // the active-voices readout is fine at the same rate.
     constexpr int kTelemetryTimerHz = 30;
@@ -117,19 +115,10 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
 
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 
-    int width    = kEditorBaseWidth;
-    int minWidth = kEditorMinWidth;
-#if SAMPLEMACHINE_DEBUG_MIDI_PANEL
-    debugPanel = std::make_unique<DebugMidiPanel> (processor.getEngine());
-    addAndMakeVisible (*debugPanel);
-    width    += kDebugPanelWidth;
-    minWidth += kDebugPanelWidth;
-#endif
-
-    // The WebView layout is a responsive CSS grid — let the user resize.
+    // The WebView layout reflows responsively — let the user resize.
     setResizable (true, false);
-    setResizeLimits (minWidth, kEditorMinHeight, 2400, 1600);
-    setSize (width, kEditorHeight);
+    setResizeLimits (kEditorMinWidth, kEditorMinHeight, 2400, 1600);
+    setSize (kEditorBaseWidth, kEditorHeight);
 
     // Seed the CC-control number set so the live reflect-back poll works even
     // before the UI calls getCcControls (e.g. when restoring a session SFZ).
@@ -153,15 +142,8 @@ void PlayerEditor::paint (juce::Graphics& g)
 
 void PlayerEditor::resized()
 {
-    auto area = getLocalBounds();
-
-#if SAMPLEMACHINE_DEBUG_MIDI_PANEL
-    if (debugPanel != nullptr)
-        debugPanel->setBounds (area.removeFromRight (kDebugPanelWidth));
-#endif
-
     if (webView != nullptr)
-        webView->setBounds (area);
+        webView->setBounds (getLocalBounds());
 }
 
 // --- file drag-and-drop (SMPL-89 / SMPL-87) --------------------------------
