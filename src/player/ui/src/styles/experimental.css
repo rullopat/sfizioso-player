@@ -1,0 +1,17 @@
+/* Dedicated tab for engine-wired but non-functional (experimental) controls. */
+.experimental-intro {
+  width: 100%;
+  margin: 0 0 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  max-width: 520px;
+}
+
+.experimental-note {
+  width: 100%;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}

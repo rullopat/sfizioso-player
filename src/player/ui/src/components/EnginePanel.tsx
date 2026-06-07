@@ -3,7 +3,6 @@ import { Segmented } from "@shared/components/Segmented";
 import { useComboBoxParam, useToggleParam } from "@shared/hooks/useParam";
 import { PanelSection } from "./PanelSection";
 import {
-  PARAM_OVERSAMPLING,
   PARAM_PRELOAD_SIZE,
   PARAM_SQ_LIVE,
   PARAM_SQ_FREEWHEEL,
@@ -23,7 +22,6 @@ const TOGGLE = [
 // come from the Choice params); booleans are toggles. Option labels mirror
 // sfizz-ui (sample 0..10, oscillator 0..3).
 export function EnginePanel() {
-  const over = useComboBoxParam(PARAM_OVERSAMPLING, 0);
   const preload = useComboBoxParam(PARAM_PRELOAD_SIZE, 1);
   const sampleQ = useComboBoxParam(PARAM_SQ_LIVE, 2);
   const sampleQFw = useComboBoxParam(PARAM_SQ_FREEWHEEL, 10);
@@ -34,7 +32,6 @@ export function EnginePanel() {
 
   return (
     <PanelSection title="ENGINE" className="engine-panel">
-      <Dropdown label="Oversampling" value={over.index} options={over.choices} onChange={over.setIndex} />
       <Dropdown label="Preload" value={preload.index} options={preload.choices} onChange={preload.setIndex} />
 
       <Dropdown label="Sample Quality" value={sampleQ.index} options={sampleQ.choices} onChange={sampleQ.setIndex} />
@@ -50,8 +47,6 @@ export function EnginePanel() {
         options={TOGGLE}
         onSelect={(i) => sustain.setValue(i === 1)}
       />
-
-      <div className="engine-note">Oversampling — experimental (engine stub, no audible effect)</div>
     </PanelSection>
   );
 }
