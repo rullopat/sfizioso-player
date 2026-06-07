@@ -1,0 +1,53 @@
+/* Themed combobox. The closed control is fully styled; the open option list
+   is the OS-native popup (inherits the system dark appearance). */
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.dropdown-field {
+  position: relative;
+}
+
+.dropdown-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 32px;
+  padding: 0 28px 0 12px;
+  background: var(--bg-0);
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  color: var(--text-0);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.dropdown-select:hover {
+  border-color: var(--stroke-bright);
+}
+.dropdown-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 14px var(--accent-glow);
+}
+
+.dropdown-caret {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-3);
+  font-size: 9px;
+}
+
+.dropdown-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}

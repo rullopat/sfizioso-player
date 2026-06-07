@@ -1,74 +1,56 @@
-import { Knob } from "@shared/components/Knob";
+import { Dropdown } from "@shared/components/Dropdown";
 import { Segmented } from "@shared/components/Segmented";
-import { useSliderParam, useComboBoxParam, useToggleParam } from "@shared/hooks/useParam";
+import { useComboBoxParam, useToggleParam } from "@shared/hooks/useParam";
 import { PanelSection } from "./PanelSection";
 import {
   PARAM_OVERSAMPLING,
   PARAM_PRELOAD_SIZE,
   PARAM_SQ_LIVE,
   PARAM_SQ_FREEWHEEL,
+  PARAM_OSC_Q_LIVE,
+  PARAM_OSC_Q_FREEWHEEL,
   PARAM_FREEWHEEL,
+  PARAM_SUSTAIN_CANCELS,
 } from "../paramIds";
 import "../styles/engine.css";
 
-// sfizz sample-quality menu (0..10).
-const QUALITY = [
-  "Nearest", "Linear", "Poly", "Sinc 8", "Sinc 12", "Sinc 16",
-  "Sinc 24", "Sinc 36", "Sinc 48", "Sinc 60", "Sinc 72",
+const TOGGLE = [
+  { label: "OFF", value: 0 },
+  { label: "ON", value: 1 },
 ];
-const qualityName = (v: number) => QUALITY[Math.round(v)] ?? `${Math.round(v)}`;
 
-// SMPL-86 — engine quality / performance settings.
+// SMPL-86 — engine quality / performance. Selections are comboboxes (labels
+// come from the Choice params); booleans are toggles. Option labels mirror
+// sfizz-ui (sample 0..10, oscillator 0..3).
 export function EnginePanel() {
   const over = useComboBoxParam(PARAM_OVERSAMPLING, 0);
-  const preload = useSliderParam(PARAM_PRELOAD_SIZE, 8);
-  const sqLive = useSliderParam(PARAM_SQ_LIVE, 2);
-  const sqFw = useSliderParam(PARAM_SQ_FREEWHEEL, 10);
+  const preload = useComboBoxParam(PARAM_PRELOAD_SIZE, 1);
+  const sampleQ = useComboBoxParam(PARAM_SQ_LIVE, 2);
+  const sampleQFw = useComboBoxParam(PARAM_SQ_FREEWHEEL, 10);
+  const oscQ = useComboBoxParam(PARAM_OSC_Q_LIVE, 1);
+  const oscQFw = useComboBoxParam(PARAM_OSC_Q_FREEWHEEL, 3);
   const fw = useToggleParam(PARAM_FREEWHEEL, false);
-
-  const overOptions = (over.choices.length > 0 ? over.choices : ["1x", "2x", "4x", "8x"]).map(
-    (label, i) => ({ label, value: i })
-  );
+  const sustain = useToggleParam(PARAM_SUSTAIN_CANCELS, false);
 
   return (
     <PanelSection title="ENGINE" className="engine-panel">
-      <Knob
-        label="PRELOAD"
-        value={preload.value}
-        normalised={preload.normalised}
-        onChange={preload.setNormalised}
-        onDragStart={preload.dragStart}
-        onDragEnd={preload.dragEnd}
-        format={(v) => `${Math.round(v)} kB`}
-      />
-      <Knob
-        label="LIVE QUAL"
-        value={sqLive.value}
-        normalised={sqLive.normalised}
-        onChange={sqLive.setNormalised}
-        onDragStart={sqLive.dragStart}
-        onDragEnd={sqLive.dragEnd}
-        format={qualityName}
-      />
-      <Knob
-        label="FW QUAL"
-        value={sqFw.value}
-        normalised={sqFw.normalised}
-        onChange={sqFw.setNormalised}
-        onDragStart={sqFw.dragStart}
-        onDragEnd={sqFw.dragEnd}
-        format={qualityName}
-      />
-      <Segmented label="OVERSAMPLE" selected={over.index} options={overOptions} onSelect={over.setIndex} />
+      <Dropdown label="Oversampling" value={over.index} options={over.choices} onChange={over.setIndex} />
+      <Dropdown label="Preload" value={preload.index} options={preload.choices} onChange={preload.setIndex} />
+
+      <Dropdown label="Sample Quality" value={sampleQ.index} options={sampleQ.choices} onChange={sampleQ.setIndex} />
+      <Dropdown label="…When Freewheeling" value={sampleQFw.index} options={sampleQFw.choices} onChange={sampleQFw.setIndex} />
+
+      <Dropdown label="Oscillator Quality" value={oscQ.index} options={oscQ.choices} onChange={oscQ.setIndex} />
+      <Dropdown label="…When Freewheeling" value={oscQFw.index} options={oscQFw.choices} onChange={oscQFw.setIndex} />
+
+      <Segmented label="Freewheel" selected={fw.value ? 1 : 0} options={TOGGLE} onSelect={(i) => fw.setValue(i === 1)} />
       <Segmented
-        label="FREEWHEEL"
-        selected={fw.value ? 1 : 0}
-        options={[
-          { label: "OFF", value: 0 },
-          { label: "ON", value: 1 },
-        ]}
-        onSelect={(i) => fw.setValue(i === 1)}
+        label="Sustain Cancels Release"
+        selected={sustain.value ? 1 : 0}
+        options={TOGGLE}
+        onSelect={(i) => sustain.setValue(i === 1)}
       />
+
       <div className="engine-note">Oversampling — experimental (engine stub, no audible effect)</div>
     </PanelSection>
   );

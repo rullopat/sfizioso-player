@@ -81,7 +81,8 @@ PlayerOscQuery& PlayerEngine::osc()
 }
 
 void PlayerEngine::addParameters (juce::AudioProcessorValueTreeState::ParameterLayout& layout,
-                                  MpeMode defaultMpeMode)
+                                  MpeMode defaultMpeMode,
+                                  int maxVoices)
 {
     // Choice indices intentionally match the MpeMode enum integer values
     // (None=0, Pressure=1, Full=2) so the conversion in parameterChanged
@@ -92,7 +93,7 @@ void PlayerEngine::addParameters (juce::AudioProcessorValueTreeState::ParameterL
                                                       juce::NormalisableRange<float> (-60.0f, 6.0f, 0.1f),
                                                       0.0f),
         std::make_unique<juce::AudioParameterInt>    (juce::ParameterID { PlayerEngineParamIds::polyphony, 1 },
-                                                      "Polyphony", 1, 64, 16),
+                                                      "Polyphony", 1, maxVoices, 16),
         std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { PlayerEngineParamIds::mpeMode, 1 },
                                                       "MPE",
                                                       juce::StringArray { "Off", "Pressure", "Full" },
@@ -150,11 +151,21 @@ int PlayerEngine::getSampleQuality (bool freewheeling) const
     return synth->getSampleQuality (freewheeling ? sfizioso::Sfizz::ProcessFreewheeling
                                                  : sfizioso::Sfizz::ProcessLive);
 }
+void PlayerEngine::setOscillatorQuality (bool freewheeling, int quality)
+{
+    synth->setOscillatorQuality (freewheeling ? sfizioso::Sfizz::ProcessFreewheeling
+                                              : sfizioso::Sfizz::ProcessLive,
+                                 quality);
+}
 void PlayerEngine::setFreewheel (bool enabled)
 {
     freewheelEnabled = enabled;
     if (enabled) synth->enableFreeWheeling();
     else         synth->disableFreeWheeling();
+}
+void PlayerEngine::setSustainCancelsRelease (bool value)
+{
+    synth->setSustainCancelsRelease (value);
 }
 
 // --- SMPL-87 tuning --------------------------------------------------------

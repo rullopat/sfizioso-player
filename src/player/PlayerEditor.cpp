@@ -57,7 +57,10 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             .withOptionsFrom (preloadRelay)
             .withOptionsFrom (sqLiveRelay)
             .withOptionsFrom (sqFreewheelRelay)
+            .withOptionsFrom (oscQualityLiveRelay)
+            .withOptionsFrom (oscQualityFreewheelRelay)
             .withOptionsFrom (freewheelRelay)
+            .withOptionsFrom (sustainRelay)
             .withOptionsFrom (rootKeyRelay)
             .withOptionsFrom (tuningFreqRelay)
             .withOptionsFrom (stretchRelay)
@@ -87,16 +90,26 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
         return std::make_unique<juce::WebSliderParameterAttachment> (
             *apvts.getParameter (id), relay, nullptr);
     };
-    gainAttach        = slider (PlayerEngineParamIds::gainDb,                 gainRelay);
-    polyphonyAttach   = slider (PlayerEngineParamIds::polyphony,             polyphonyRelay);
-    preloadAttach     = slider (PlayerEngineParamIds::preloadSize,           preloadRelay);
-    sqLiveAttach      = slider (PlayerEngineParamIds::sampleQualityLive,     sqLiveRelay);
-    sqFreewheelAttach = slider (PlayerEngineParamIds::sampleQualityFreewheel,sqFreewheelRelay);
-    rootKeyAttach     = slider (PlayerEngineParamIds::scalaRootKey,          rootKeyRelay);
-    tuningFreqAttach  = slider (PlayerEngineParamIds::tuningFrequency,       tuningFreqRelay);
-    stretchAttach     = slider (PlayerEngineParamIds::stretchTuning,         stretchRelay);
-    mpeMasterAttach   = slider (PlayerEngineParamIds::mpeMasterBend,         mpeMasterRelay);
-    mpePerNoteAttach  = slider (PlayerEngineParamIds::mpePerNoteBend,        mpePerNoteRelay);
+    gainAttach        = slider (PlayerEngineParamIds::gainDb,         gainRelay);
+    polyphonyAttach   = slider (PlayerEngineParamIds::polyphony,     polyphonyRelay);
+    rootKeyAttach     = slider (PlayerEngineParamIds::scalaRootKey,  rootKeyRelay);
+    tuningFreqAttach  = slider (PlayerEngineParamIds::tuningFrequency, tuningFreqRelay);
+    stretchAttach     = slider (PlayerEngineParamIds::stretchTuning, stretchRelay);
+    mpeMasterAttach   = slider (PlayerEngineParamIds::mpeMasterBend, mpeMasterRelay);
+    mpePerNoteAttach  = slider (PlayerEngineParamIds::mpePerNoteBend, mpePerNoteRelay);
+
+    auto combo = [&apvts] (const char* id, juce::WebComboBoxRelay& relay)
+    {
+        return std::make_unique<juce::WebComboBoxParameterAttachment> (
+            *apvts.getParameter (id), relay, nullptr);
+    };
+    mpeModeAttach             = combo (PlayerEngineParamIds::mpeMode,                mpeModeRelay);
+    oversamplingAttach        = combo (PlayerEngineParamIds::oversampling,           oversamplingRelay);
+    preloadAttach             = combo (PlayerEngineParamIds::preloadSize,            preloadRelay);
+    sqLiveAttach              = combo (PlayerEngineParamIds::sampleQualityLive,      sqLiveRelay);
+    sqFreewheelAttach         = combo (PlayerEngineParamIds::sampleQualityFreewheel, sqFreewheelRelay);
+    oscQualityLiveAttach      = combo (PlayerEngineParamIds::oscQualityLive,         oscQualityLiveRelay);
+    oscQualityFreewheelAttach = combo (PlayerEngineParamIds::oscQualityFreewheel,    oscQualityFreewheelRelay);
 
     auto toggle = [&apvts] (const char* id, juce::WebToggleButtonRelay& relay)
     {
@@ -105,13 +118,8 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
     };
     mpeIgnoreMasterAttach  = toggle (PlayerEngineParamIds::mpeIgnoreMasterRpn,  mpeIgnoreMasterRelay);
     mpeIgnorePerNoteAttach = toggle (PlayerEngineParamIds::mpeIgnorePerNoteRpn, mpeIgnorePerNoteRelay);
-
-    mpeModeAttach = std::make_unique<juce::WebComboBoxParameterAttachment> (
-        *apvts.getParameter (PlayerEngineParamIds::mpeMode), mpeModeRelay, nullptr);
-    oversamplingAttach = std::make_unique<juce::WebComboBoxParameterAttachment> (
-        *apvts.getParameter (PlayerEngineParamIds::oversampling), oversamplingRelay, nullptr);
-    freewheelAttach = std::make_unique<juce::WebToggleButtonParameterAttachment> (
-        *apvts.getParameter (PlayerEngineParamIds::freewheel), freewheelRelay, nullptr);
+    freewheelAttach        = toggle (PlayerEngineParamIds::freewheel,           freewheelRelay);
+    sustainAttach          = toggle (PlayerEngineParamIds::sustainCancelsRelease, sustainRelay);
 
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 

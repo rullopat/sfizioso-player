@@ -22,6 +22,31 @@ static const char* kDefaultScala =
     " 100.0\n 200.0\n 300.0\n 400.0\n 500.0\n 600.0\n"
     " 700.0\n 800.0\n 900.0\n 1000.0\n 1100.0\n 2/1\n";
 
+// SMPL-86 — engine quality dropdown choices. Sample/oscillator labels mirror
+// sfizz-ui; preload is a stepped kB set (engine takes bytes → ×1024).
+static const int kPreloadKb[] = { 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+
+static juce::StringArray kPreloadChoices()
+{
+    juce::StringArray a;
+    for (int kb : kPreloadKb) a.add (juce::String (kb) + " kB");
+    return a;
+}
+static juce::StringArray kSampleQualityChoices()
+{
+    return { "Nearest", "Linear", "Polynomial", "Sinc 8", "Sinc 12", "Sinc 16",
+             "Sinc 24", "Sinc 36", "Sinc 48", "Sinc 60", "Sinc 72" };
+}
+static juce::StringArray kOscQualityChoices()
+{
+    return { "Nearest", "Linear", "High", "Dual-High" };
+}
+static std::uint32_t kPreloadBytesForIndex (int idx)
+{
+    const int n = static_cast<int> (sizeof (kPreloadKb) / sizeof (kPreloadKb[0]));
+    return static_cast<std::uint32_t> (kPreloadKb[juce::jlimit (0, n - 1, idx)]) * 1024u;
+}
+
 PlayerProcessor::PlayerProcessor()
     : juce::AudioProcessor (BusesProperties()
                                 .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
@@ -46,7 +71,10 @@ PlayerProcessor::PlayerProcessor()
                             PlayerEngineParamIds::preloadSize,
                             PlayerEngineParamIds::sampleQualityLive,
                             PlayerEngineParamIds::sampleQualityFreewheel,
+                            PlayerEngineParamIds::oscQualityLive,
+                            PlayerEngineParamIds::oscQualityFreewheel,
                             PlayerEngineParamIds::freewheel,
+                            PlayerEngineParamIds::sustainCancelsRelease,
                             PlayerEngineParamIds::scalaRootKey,
                             PlayerEngineParamIds::tuningFrequency,
                             PlayerEngineParamIds::stretchTuning,
@@ -65,7 +93,10 @@ PlayerProcessor::~PlayerProcessor()
                             PlayerEngineParamIds::preloadSize,
                             PlayerEngineParamIds::sampleQualityLive,
                             PlayerEngineParamIds::sampleQualityFreewheel,
+                            PlayerEngineParamIds::oscQualityLive,
+                            PlayerEngineParamIds::oscQualityFreewheel,
                             PlayerEngineParamIds::freewheel,
+                            PlayerEngineParamIds::sustainCancelsRelease,
                             PlayerEngineParamIds::scalaRootKey,
                             PlayerEngineParamIds::tuningFrequency,
                             PlayerEngineParamIds::stretchTuning,
@@ -82,27 +113,34 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlayerProcessor::createParam
     // Generic player defaults to full MPE: non-MPE keyboards send on
     // channel 1 which collapses to master-channel inheritance and renders
     // identically to None, while MPE controllers just work out of the box.
-    PlayerEngine::addParameters (layout, MpeMode::Full);
+    // 256-voice ceiling is player-only (the rompler keeps the 64 default).
+    PlayerEngine::addParameters (layout, MpeMode::Full, 256);
 
     using namespace PlayerEngineParamIds;
 
     // SMPL-86 engine / quality. Registered here (player-app-only) rather than
     // in the shared PlayerEngine::addParameters, so the closed romplers'
-    // parameter list is unchanged.
+    // parameter list is unchanged. All are Choice params → dropdowns; labels
+    // mirror sfizz-ui (sample 0..10, oscillator 0..3).
     layout.add (
         std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { oversampling, 1 },
                                                       "Oversampling",
                                                       juce::StringArray { "1x", "2x", "4x", "8x" }, 0),
-        // Preload size in kB (engine takes bytes; we multiply). Default 8 kB
-        // matches the engine's 8192-byte default.
-        std::make_unique<juce::AudioParameterInt>    (juce::ParameterID { preloadSize, 1 },
-                                                      "Preload (kB)", 4, 1024, 8),
-        std::make_unique<juce::AudioParameterInt>    (juce::ParameterID { sampleQualityLive, 1 },
-                                                      "Sample Quality (Live)", 0, 10, 2),
-        std::make_unique<juce::AudioParameterInt>    (juce::ParameterID { sampleQualityFreewheel, 1 },
-                                                      "Sample Quality (Freewheel)", 0, 10, 10),
+        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { preloadSize, 1 },
+                                                      "Preload",
+                                                      kPreloadChoices(), 1), // default 8 kB (index 1)
+        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { sampleQualityLive, 1 },
+                                                      "Sample Quality", kSampleQualityChoices(), 2),
+        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { sampleQualityFreewheel, 1 },
+                                                      "Sample Quality (Freewheeling)", kSampleQualityChoices(), 10),
+        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { oscQualityLive, 1 },
+                                                      "Oscillator Quality", kOscQualityChoices(), 1),
+        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { oscQualityFreewheel, 1 },
+                                                      "Oscillator Quality (Freewheeling)", kOscQualityChoices(), 3),
         std::make_unique<juce::AudioParameterBool>   (juce::ParameterID { freewheel, 1 },
-                                                      "Freewheel", false));
+                                                      "Freewheel", false),
+        std::make_unique<juce::AudioParameterBool>   (juce::ParameterID { sustainCancelsRelease, 1 },
+                                                      "Sustain Cancels Release", false));
 
     // SMPL-87 tuning.
     layout.add (
@@ -175,10 +213,13 @@ void PlayerProcessor::applyEngineSettings()
     };
 
     engine.setOversamplingFactor (1 << valInt (PlayerEngineParamIds::oversampling)); // 0..3 -> 1/2/4/8
-    engine.setPreloadSize (static_cast<std::uint32_t> (valInt (PlayerEngineParamIds::preloadSize)) * 1024u);
+    engine.setPreloadSize (kPreloadBytesForIndex (valInt (PlayerEngineParamIds::preloadSize)));
     engine.setSampleQuality (false, valInt (PlayerEngineParamIds::sampleQualityLive));
     engine.setSampleQuality (true,  valInt (PlayerEngineParamIds::sampleQualityFreewheel));
+    engine.setOscillatorQuality (false, valInt (PlayerEngineParamIds::oscQualityLive));
+    engine.setOscillatorQuality (true,  valInt (PlayerEngineParamIds::oscQualityFreewheel));
     engine.setFreewheel (valInt (PlayerEngineParamIds::freewheel) != 0);
+    engine.setSustainCancelsRelease (valInt (PlayerEngineParamIds::sustainCancelsRelease) != 0);
 
     engine.setScalaRootKey (valInt (PlayerEngineParamIds::scalaRootKey));
     engine.setTuningFrequency (valFloat (PlayerEngineParamIds::tuningFrequency));
@@ -434,13 +475,19 @@ void PlayerProcessor::parameterChanged (const juce::String& parameterID, float n
     else if (parameterID == oversampling)
         engine.setOversamplingFactor (1 << static_cast<int> (newValue));
     else if (parameterID == preloadSize)
-        engine.setPreloadSize (static_cast<std::uint32_t> (newValue) * 1024u);
+        engine.setPreloadSize (kPreloadBytesForIndex (static_cast<int> (newValue)));
     else if (parameterID == sampleQualityLive)
         engine.setSampleQuality (false, static_cast<int> (newValue));
     else if (parameterID == sampleQualityFreewheel)
         engine.setSampleQuality (true, static_cast<int> (newValue));
+    else if (parameterID == oscQualityLive)
+        engine.setOscillatorQuality (false, static_cast<int> (newValue));
+    else if (parameterID == oscQualityFreewheel)
+        engine.setOscillatorQuality (true, static_cast<int> (newValue));
     else if (parameterID == freewheel)
         engine.setFreewheel (newValue > 0.5f);
+    else if (parameterID == sustainCancelsRelease)
+        engine.setSustainCancelsRelease (newValue > 0.5f);
     suspendProcessing (false);
 }
 

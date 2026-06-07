@@ -35,7 +35,10 @@ namespace PlayerEngineParamIds
     inline constexpr const char* preloadSize            = "preloadSize";
     inline constexpr const char* sampleQualityLive      = "sampleQualityLive";
     inline constexpr const char* sampleQualityFreewheel = "sampleQualityFreewheel";
+    inline constexpr const char* oscQualityLive         = "oscQualityLive";
+    inline constexpr const char* oscQualityFreewheel    = "oscQualityFreewheel";
     inline constexpr const char* freewheel              = "freewheel";
+    inline constexpr const char* sustainCancelsRelease  = "sustainCancelsRelease";
 
     // SMPL-87 tuning. Player-app-only registration (see note above).
     inline constexpr const char* scalaRootKey    = "scalaRootKey";
@@ -98,7 +101,8 @@ public:
      *                        round-trips the chosen value through APVTS.
      */
     static void addParameters (juce::AudioProcessorValueTreeState::ParameterLayout& layout,
-                               MpeMode defaultMpeMode = MpeMode::None);
+                               MpeMode defaultMpeMode = MpeMode::None,
+                               int maxVoices = 64);
 
     void connectApvts (juce::AudioProcessorValueTreeState& apvts);
 
@@ -128,9 +132,11 @@ public:
     int      getOversamplingFactor() const;
     void     setPreloadSize (std::uint32_t bytes);
     std::uint32_t getPreloadSize() const;
-    void     setSampleQuality (bool freewheeling, int quality); // 0..10
+    void     setSampleQuality (bool freewheeling, int quality);     // 0..10
     int      getSampleQuality (bool freewheeling) const;
+    void     setOscillatorQuality (bool freewheeling, int quality); // 0..3
     void     setFreewheel (bool enabled);
+    void     setSustainCancelsRelease (bool value);
 
     // SMPL-87 — Scala / tuning. Scala loads mutate parse state → bracket with
     // suspendProcessing like the SFZ load. The scalar setters are low-rate.

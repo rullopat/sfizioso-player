@@ -13,7 +13,10 @@ export const PARAM_OVERSAMPLING = "oversampling";
 export const PARAM_PRELOAD_SIZE = "preloadSize";
 export const PARAM_SQ_LIVE = "sampleQualityLive";
 export const PARAM_SQ_FREEWHEEL = "sampleQualityFreewheel";
+export const PARAM_OSC_Q_LIVE = "oscQualityLive";
+export const PARAM_OSC_Q_FREEWHEEL = "oscQualityFreewheel";
 export const PARAM_FREEWHEEL = "freewheel";
+export const PARAM_SUSTAIN_CANCELS = "sustainCancelsRelease";
 
 // SMPL-87 tuning.
 export const PARAM_SCALA_ROOT_KEY = "scalaRootKey";

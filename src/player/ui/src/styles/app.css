@@ -45,19 +45,23 @@
   min-height: 0;
   overflow: auto;
   display: flex;
+  flex-direction: column;
+  gap: 22px;
   padding: 24px;
 }
 
-/* Inside a tab a section fills the area — drop the nested card chrome and the
-   redundant header (the tab label already names it). */
+/* Inside a tab a section fills the area and drops the nested card chrome (the
+   header rule stays as a section label — needed where a tab holds two
+   sections, e.g. OUTPUT + CONTROLS). */
 .tab-content .panel {
-  flex: 1;
+  flex: 1 1 auto;
   border: none;
   background: none;
   box-shadow: none;
   padding: 0;
 }
-.tab-content .panel-header { display: none; }
+/* OUTPUT is compact — let CONTROLS take the remaining height in the merged tab. */
+.tab-content .output-panel { flex: 0 0 auto; }
 .tab-content .panel-body {
   justify-content: flex-start;
   align-content: flex-start;

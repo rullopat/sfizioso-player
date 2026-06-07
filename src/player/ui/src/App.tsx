@@ -40,7 +40,6 @@ const DEFAULT_APP_INFO: AppInfo = { productName: "Sfizioso Player", version: "" 
 
 const TABS = [
   { id: "output", label: "OUTPUT" },
-  { id: "controls", label: "CONTROLS" },
   { id: "engine", label: "ENGINE" },
   { id: "tuning", label: "TUNING" },
   { id: "mpe", label: "MPE" },
@@ -113,8 +112,12 @@ export default function App() {
       </nav>
 
       <main className="tab-content">
-        {tab === "output" && <OutputModule />}
-        {tab === "controls" && <CcControlsPanel />}
+        {tab === "output" && (
+          <>
+            <OutputModule />
+            <CcControlsPanel />
+          </>
+        )}
         {tab === "engine" && <EnginePanel />}
         {tab === "tuning" && <TuningPanel />}
         {tab === "mpe" && <MpePanel />}
