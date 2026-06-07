@@ -31,6 +31,13 @@
   flex-direction: column;
   gap: 16px;
   min-height: 0;
+  overflow: auto;
+}
+
+/* SMPL-88 — keyboard fills its full-width bottom row. */
+.keyboard-panel .panel-body {
+  min-height: 110px;
+  flex-wrap: nowrap;
 }
 
 /* Collapse to a single column when the editor is sized down. */

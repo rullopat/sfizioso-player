@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { TopBar } from "./components/TopBar";
 import { PanelSection } from "./components/PanelSection";
+import { InfoPanel } from "./components/InfoPanel";
+import { EnginePanel } from "./components/EnginePanel";
+import { TuningPanel } from "./components/TuningPanel";
+import { CcControlsPanel } from "./components/CcControlsPanel";
 import { Knob } from "@shared/components/Knob";
 import { Segmented } from "@shared/components/Segmented";
 import { LevelMeter } from "@shared/components/LevelMeter";
+import { Keyboard } from "@shared/components/Keyboard";
 import { useSliderParam, useComboBoxParam } from "@shared/hooks/useParam";
 import { callNative, onBackendEvent } from "@shared/juceBridge";
 import {
@@ -13,28 +18,21 @@ import {
   FN_LOAD_SFZ,
   FN_GET_STATUS,
   FN_GET_APP_INFO,
+  FN_GET_KEY_LABELS,
+  FN_NOTE_ON,
+  FN_NOTE_OFF,
   EVT_VOICES,
   EVT_METER,
+  EVT_NOTES,
+  EVT_SFZ_LOADED,
+  EVT_SFZ_RELOADED,
 } from "./paramIds";
+import { Status, EMPTY_STATUS } from "./types";
 import "./styles/app.css";
-
-type Status = {
-  sfzPath: string;
-  fileName: string;
-  numRegions: number;
-  numPreloadedSamples: number;
-};
 
 type AppInfo = {
   productName: string;
   version: string;
-};
-
-const EMPTY_STATUS: Status = {
-  sfzPath: "",
-  fileName: "",
-  numRegions: 0,
-  numPreloadedSamples: 0,
 };
 
 // Fallback until getAppInfo resolves; the real values come from the JUCE
@@ -53,22 +51,26 @@ export default function App() {
     callNative<AppInfo>(FN_GET_APP_INFO).then((a) => {
       if (a?.productName) setAppInfo(a);
     });
-    const unsub = onBackendEvent<{ active: number }>(EVT_VOICES, (e) =>
+    const offVoices = onBackendEvent<{ active: number }>(EVT_VOICES, (e) =>
       setActiveVoices(e.active)
     );
-    return unsub;
+    // SMPL-89 — re-hydrate the status strip + info panel on any (re)load,
+    // including recent-files clicks, drag-drop, and on-disk auto-reload.
+    const apply = (s: Status) => {
+      if (s) setStatus(s);
+    };
+    const offLoaded = onBackendEvent<Status>(EVT_SFZ_LOADED, apply);
+    const offReloaded = onBackendEvent<Status>(EVT_SFZ_RELOADED, apply);
+    return () => {
+      offVoices();
+      offLoaded();
+      offReloaded();
+    };
   }, []);
 
   const loadSfz = async () => {
-    const res = await callNative<Status & { ok: boolean }>(FN_LOAD_SFZ);
-    if (res?.ok) {
-      setStatus({
-        sfzPath: res.sfzPath,
-        fileName: res.fileName,
-        numRegions: res.numRegions,
-        numPreloadedSamples: res.numPreloadedSamples,
-      });
-    }
+    const res = await callNative<Status>(FN_LOAD_SFZ);
+    if (res?.ok) setStatus(res);
   };
 
   const sampleName = status.fileName || "No SFZ loaded";
@@ -88,44 +90,27 @@ export default function App() {
 
       <main className="app-main">
         {/* CONTROLS — auto-generated CC controls (SMPL-85). */}
-        <PanelSection
-          title="CONTROLS"
-          area="cc"
-          placeholder
-          hint="Auto-generated CC controls"
-        />
+        <CcControlsPanel />
 
         <div className="center-stack">
           <OutputModule />
-          {/* ENGINE — oversampling / preload / quality (SMPL-86). */}
-          <PanelSection
-            title="ENGINE"
-            placeholder
-            hint="Oversampling · preload · quality"
-          />
-          {/* TUNING — Scala / root key / A4 / stretch (SMPL-87). */}
-          <PanelSection
-            title="TUNING"
-            placeholder
-            hint="Scala · root key · A4 · stretch"
-          />
+          <EnginePanel />
+          <TuningPanel />
         </div>
 
         {/* INSTRUMENT INFO — full sfizz stats (SMPL-83). */}
-        <PanelSection
-          title="INSTRUMENT INFO"
-          area="info"
-          placeholder
-          hint="Regions · groups · sample rate"
-        />
+        <InfoPanel status={status} activeVoices={activeVoices} />
 
         {/* KEYBOARD — playable on-screen keyboard (SMPL-88). */}
-        <PanelSection
-          title="KEYBOARD"
-          area="keyboard"
-          placeholder
-          hint="Playable on-screen keyboard"
-        />
+        <PanelSection title="KEYBOARD" area="keyboard" className="keyboard-panel">
+          <Keyboard
+            noteOnFn={FN_NOTE_ON}
+            noteOffFn={FN_NOTE_OFF}
+            getKeyLabelsFn={FN_GET_KEY_LABELS}
+            notesEvent={EVT_NOTES}
+            loadedEvent={EVT_SFZ_LOADED}
+          />
+        </PanelSection>
       </main>
 
       <footer className="app-footer">
@@ -180,6 +165,7 @@ function OutputModule() {
         }
         onSelect={mpe.setIndex}
       />
+      {/* SMPL-84 — output level meter, in the OUTPUT monitor region near gain. */}
       <div style={{ flexBasis: "100%" }}>
         <LevelMeter eventId={EVT_METER} />
       </div>

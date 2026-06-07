@@ -128,6 +128,7 @@ if(PROJECT_IS_TOP_LEVEL)
         PRIVATE
             juce::juce_audio_utils
             player_core
+            core_prefs            # SMPL-89 recent-files persistence
         PUBLIC
             juce::juce_recommended_config_flags
             juce::juce_recommended_lto_flags

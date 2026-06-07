@@ -1,0 +1,30 @@
+/* SMPL-83 — read-only instrument stat grid. */
+.info-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--stroke);
+}
+.info-row:last-child { border-bottom: none; }
+
+.info-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.info-value {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-0);
+  font-weight: 600;
+}

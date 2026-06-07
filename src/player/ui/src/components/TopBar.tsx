@@ -1,4 +1,12 @@
+import { useState } from "react";
+import { callNative } from "@shared/juceBridge";
+import { FN_GET_RECENT, FN_LOAD_SFZ_PATH } from "../paramIds";
 import "../styles/topbar.css";
+
+interface RecentFile {
+  path: string;
+  fileName: string;
+}
 
 interface Props {
   productName: string;
@@ -8,6 +16,24 @@ interface Props {
 }
 
 export function TopBar({ productName, sampleName, meta, onLoad }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [recent, setRecent] = useState<RecentFile[]>([]);
+
+  const toggleMenu = async () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+    const list = await callNative<RecentFile[]>(FN_GET_RECENT);
+    setRecent(list ?? []);
+    setMenuOpen(true);
+  };
+
+  const pick = (path: string) => {
+    setMenuOpen(false);
+    callNative(FN_LOAD_SFZ_PATH, path); // status re-hydrates via the sfzLoaded event
+  };
+
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -26,11 +52,34 @@ export function TopBar({ productName, sampleName, meta, onLoad }: Props) {
       </div>
 
       <div className="topbar-center">
-        <button className="sample-slot" onClick={onLoad}>
-          <span className="sample-slot-label">SFZ</span>
-          <span className="sample-slot-name">{sampleName}</span>
-          <span className="sample-slot-icon">▾</span>
-        </button>
+        <div className="sample-slot-wrap">
+          <button className="sample-slot" onClick={onLoad}>
+            <span className="sample-slot-label">SFZ</span>
+            <span className="sample-slot-name">{sampleName}</span>
+          </button>
+          <button
+            className="sample-slot-caret"
+            title="Recent files"
+            onClick={toggleMenu}
+          >
+            ▾
+          </button>
+
+          {menuOpen && (
+            <div className="recent-menu" onMouseLeave={() => setMenuOpen(false)}>
+              {recent.length === 0 ? (
+                <div className="recent-empty">No recent files</div>
+              ) : (
+                recent.map((r) => (
+                  <button key={r.path} className="recent-row" onClick={() => pick(r.path)}>
+                    <span className="recent-name">{r.fileName}</span>
+                    <span className="recent-dir">{r.path}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="topbar-right">

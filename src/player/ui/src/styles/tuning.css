@@ -1,0 +1,46 @@
+/* SMPL-87 — tuning panel scale row. */
+.tuning-scale {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stroke);
+}
+
+.tuning-scale-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-3);
+}
+
+.tuning-scale-name {
+  font-size: 11px;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tuning-scale-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.tuning-btn {
+  flex: 1;
+  height: 26px;
+  background: var(--bg-0);
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  color: var(--text-1);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.tuning-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
