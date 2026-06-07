@@ -20,7 +20,7 @@ class PlayerProcessor;
  * the file chooser, introspection queries, and the live streams cross the
  * bridge via native functions and timer-batched events.
  *
- * Member declaration order is load-bearing — see CLAUDE.md "Critical rules"
+ * Member declaration order is load-bearing — see AGENTS.md "Critical rules"
  * for the relays → webview → attachments rule.
  */
 class PlayerEditor : public juce::AudioProcessorEditor,
@@ -83,7 +83,7 @@ private:
     // The WebView holds references to relays via lambdas (Options{}.withOptionsFrom).
     // Attachments hold references to the WebView's internal state.
     // Order MUST be: relays first → webview → attachments last.
-    // See CLAUDE.md "UI: WebView + React" — wrong order = crash on editor close.
+    // See AGENTS.md "UI: WebView + React" — wrong order = crash on editor close.
     // -----------------------------------------------------------------------
 
     juce::WebSliderRelay        gainRelay        { "gainDb" };
