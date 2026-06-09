@@ -118,6 +118,11 @@ bool PlayerEngine::loadSfzString (const juce::String& sfzText, const juce::Strin
     return synth->loadSfzString (virtualPath.toStdString(), sfzText.toStdString());
 }
 
+void PlayerEngine::setSampleReader (sfz::SampleReader* reader)
+{
+    synth->setSampleReader (reader);
+}
+
 int PlayerEngine::getNumRegions() const          { return synth->getNumRegions(); }
 int PlayerEngine::getNumPreloadedSamples() const { return static_cast<int> (synth->getNumPreloadedSamples()); }
 int PlayerEngine::getNumActiveVoices() const     { return synth->getNumActiveVoices(); }

@@ -9,7 +9,11 @@
 #include <string>
 #include <vector>
 
-namespace sfz { class Sfizz; }
+namespace sfz
+{
+class SampleReader;
+class Sfizz;
+}
 namespace sfizioso { using Sfizz = ::sfz::Sfizz; } // brand alias; full surface in <sfizioso.hpp>
 
 namespace samplemachine
@@ -108,6 +112,7 @@ public:
 
     bool loadSfzFile   (const juce::File& file);
     bool loadSfzString (const juce::String& sfzText, const juce::String& virtualPath);
+    void setSampleReader (sfz::SampleReader* reader);
 
     int getNumRegions() const;
     int getNumPreloadedSamples() const;
