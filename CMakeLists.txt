@@ -149,6 +149,7 @@ if(PROJECT_IS_TOP_LEVEL)
         NEEDS_MIDI_OUTPUT FALSE
         IS_MIDI_EFFECT FALSE
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+        NEEDS_WEBVIEW2 TRUE
         COPY_PLUGIN_AFTER_BUILD TRUE)
 
     # Give every macOS wrapper its own bundle ID. Logic project compatibility is
@@ -169,7 +170,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
     target_compile_definitions(SfiziosoPlayer PUBLIC
         JUCE_USE_CURL=0
-        JUCE_VST3_CAN_REPLACE_VST2=0)
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        $<$<PLATFORM_ID:Windows>:JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1>)
 
     target_link_libraries(SfiziosoPlayer
         PRIVATE
