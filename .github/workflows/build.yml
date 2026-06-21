@@ -32,9 +32,10 @@ jobs:
         run: |
           mkdir -p artifacts/macos
           tar -czf artifacts/macos/sfizioso-player-macos.tar.gz \
-            -C "build/SfiziosoPlayer_artefacts/Release/Standalone" "Sfizioso Player.app" \
-            -C "build/SfiziosoPlayer_artefacts/Release/AU" "Sfizioso Player.component" \
-            -C "build/SfiziosoPlayer_artefacts/Release/VST3" "Sfizioso Player.vst3"
+            -C "build/SfiziosoPlayer_artefacts/Release" \
+            "Standalone/Sfizioso Player.app" \
+            "AU/Sfizioso Player.component" \
+            "VST3/Sfizioso Player.vst3"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v7
