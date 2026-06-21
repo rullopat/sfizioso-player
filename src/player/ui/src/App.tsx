@@ -180,7 +180,7 @@ function OutputModule() {
         format={(v) => `${Math.round(v)}`}
       />
       {/* SMPL-84 — output level meter, in the OUTPUT monitor region near gain. */}
-      <div style={{ flexBasis: "100%" }}>
+      <div className="output-meter">
         <LevelMeter eventId={EVT_METER} />
       </div>
     </PanelSection>

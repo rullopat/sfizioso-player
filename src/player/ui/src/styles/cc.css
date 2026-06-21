@@ -1,4 +1,8 @@
 /* SMPL-85 — CC controls grid. */
+.cc-panel .panel-body {
+  min-height: 118px;
+}
+
 .cc-grid {
   width: 100%;
   display: flex;
