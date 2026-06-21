@@ -6,9 +6,12 @@
 
 #include <array>
 #include <atomic>
+#include <memory>
 
 namespace samplemachine
 {
+
+class PortableBundle;
 
 namespace PlayerStateProps
 {
@@ -25,6 +28,8 @@ public:
 
     bool loadSfzFile (const juce::File& file);
     juce::File getCurrentSfzFile() const;
+    juce::String getLoadedInstrumentName() const;
+    juce::String getLoadedPatchName() const;
 
     int getNumRegions() const            { return engine.getNumRegions(); }
     int getNumPreloadedSamples() const   { return engine.getNumPreloadedSamples(); }
@@ -95,6 +100,7 @@ private:
     void applyEngineSettings();
     void applyMpeSettings();    // SMPL-90 — push the full MPE state from APVTS
     void appendRecentFile (const juce::File& file);
+    bool loadSfzOrBundleFile (const juce::File& file);
 
     PlayerEngine engine;
     juce::AudioProcessorValueTreeState apvts;
@@ -112,6 +118,7 @@ private:
 
     juce::Time lastSfzModTime;   // SMPL-89 host-side mtime watch
     juce::String currentScalaName { "12-TET / Default" };
+    std::unique_ptr<PortableBundle> currentBundle;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PlayerProcessor)
 };

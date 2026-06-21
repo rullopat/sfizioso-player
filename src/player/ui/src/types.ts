@@ -5,6 +5,8 @@ export interface Status {
   ok?: boolean;
   sfzPath: string;
   fileName: string;
+  bundleInstrumentName: string;
+  bundlePatchName: string;
   numRegions: number;
   numMasters: number;
   numGroups: number;
@@ -17,6 +19,8 @@ export interface Status {
 export const EMPTY_STATUS: Status = {
   sfzPath: "",
   fileName: "",
+  bundleInstrumentName: "",
+  bundlePatchName: "",
   numRegions: 0,
   numMasters: 0,
   numGroups: 0,

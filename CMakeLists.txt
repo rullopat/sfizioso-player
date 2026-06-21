@@ -116,7 +116,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
     target_sources(SfiziosoPlayer PRIVATE
         src/player/PlayerProcessor.cpp
-        src/player/PlayerEditor.cpp)
+        src/player/PlayerEditor.cpp
+        src/player/PortableBundle.cpp)
 
     target_include_directories(SfiziosoPlayer PRIVATE src/player)
 
@@ -128,6 +129,7 @@ if(PROJECT_IS_TOP_LEVEL)
         PRIVATE
             juce::juce_audio_utils
             player_core
+            sfizioso::sfizioso
             core_prefs            # SMPL-89 recent-files persistence
         PUBLIC
             juce::juce_recommended_config_flags

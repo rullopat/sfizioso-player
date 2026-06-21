@@ -1,6 +1,7 @@
 #include "PlayerProcessor.h"
 
 #include "PlayerEditor.h"
+#include "PortableBundle.h"
 
 #include <PreferenceStore.h>
 
@@ -236,7 +237,7 @@ void PlayerProcessor::applyEngineSettings()
 bool PlayerProcessor::loadSfzFile (const juce::File& file)
 {
     suspendProcessing (true);
-    const bool ok = engine.loadSfzFile (file);
+    const bool ok = loadSfzOrBundleFile (file);
     suspendProcessing (false);
     if (ok)
     {
@@ -247,10 +248,47 @@ bool PlayerProcessor::loadSfzFile (const juce::File& file)
     return ok;
 }
 
+bool PlayerProcessor::loadSfzOrBundleFile (const juce::File& file)
+{
+    if (file.hasFileExtension ("sfzbundle"))
+    {
+        auto bundle = std::make_unique<PortableBundle>();
+        if (! bundle->loadFromFile (file))
+            return false;
+
+        engine.setSampleReader (bundle->getSampleReader());
+        if (! engine.loadSfzString (bundle->getSfzText(), bundle->getVirtualPath()))
+        {
+            engine.setSampleReader (nullptr);
+            return false;
+        }
+
+        currentBundle = std::move (bundle);
+        return true;
+    }
+
+    engine.setSampleReader (nullptr);
+    if (! engine.loadSfzFile (file))
+        return false;
+
+    currentBundle.reset();
+    return true;
+}
+
 juce::File PlayerProcessor::getCurrentSfzFile() const
 {
     const auto path = apvts.state.getProperty (PlayerStateProps::sfzPath).toString();
     return path.isNotEmpty() ? juce::File (path) : juce::File();
+}
+
+juce::String PlayerProcessor::getLoadedInstrumentName() const
+{
+    return currentBundle != nullptr ? currentBundle->getInstrumentName() : juce::String();
+}
+
+juce::String PlayerProcessor::getLoadedPatchName() const
+{
+    return currentBundle != nullptr ? currentBundle->getPatchName() : juce::String();
 }
 
 // --- SMPL-87 scala ---------------------------------------------------------
@@ -324,7 +362,7 @@ bool PlayerProcessor::checkForFileReload()
         return false;
 
     suspendProcessing (true);
-    const bool ok = engine.loadSfzFile (file);
+    const bool ok = loadSfzOrBundleFile (file);
     suspendProcessing (false);
     lastSfzModTime = mod;
     return ok;
@@ -435,7 +473,7 @@ void PlayerProcessor::setStateInformation (const void* data, int sizeInBytes)
                 if (file.existsAsFile())
                 {
                     suspendProcessing (true);
-                    engine.loadSfzFile (file);
+                    loadSfzOrBundleFile (file);
                     suspendProcessing (false);
                     lastSfzModTime = file.getLastModificationTime();
                 }

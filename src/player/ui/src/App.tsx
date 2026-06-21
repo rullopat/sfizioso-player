@@ -84,7 +84,11 @@ export default function App() {
     if (res?.ok) setStatus(res);
   };
 
-  const sampleName = status.fileName || "No SFZ loaded";
+  const sampleName =
+    status.bundlePatchName ||
+    status.bundleInstrumentName ||
+    status.fileName ||
+    "No SFZ loaded";
   const meta =
     status.numRegions > 0
       ? `${status.numRegions} regions · ${status.numPreloadedSamples} samples`

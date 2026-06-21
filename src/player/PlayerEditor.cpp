@@ -282,6 +282,8 @@ juce::var PlayerEditor::makeStatusObject (bool ok) const
     obj->setProperty ("ok", ok);
     obj->setProperty ("sfzPath", file == juce::File() ? juce::String() : file.getFullPathName());
     obj->setProperty ("fileName", file == juce::File() ? juce::String() : file.getFileName());
+    obj->setProperty ("bundleInstrumentName", processor.getLoadedInstrumentName());
+    obj->setProperty ("bundlePatchName",      processor.getLoadedPatchName());
     obj->setProperty ("numRegions",          processor.getNumRegions());
     obj->setProperty ("numMasters",          processor.getNumMasters());
     obj->setProperty ("numGroups",           processor.getNumGroups());
@@ -346,7 +348,7 @@ void PlayerEditor::handleLoadSfz (const juce::Array<juce::var>&, Completion comp
     if (! initial.existsAsFile())
         initial = juce::File::getSpecialLocation (juce::File::userMusicDirectory);
 
-    chooser = std::make_unique<juce::FileChooser> ("Load SFZ instrument", initial, "*.sfz");
+    chooser = std::make_unique<juce::FileChooser> ("Load SFZ instrument", initial, "*.sfz;*.sfzbundle");
     const auto flags = juce::FileBrowserComponent::openMode
                      | juce::FileBrowserComponent::canSelectFiles;
 
