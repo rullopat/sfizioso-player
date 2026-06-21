@@ -23,6 +23,17 @@ namespace
     constexpr int kCcPollEvery     = 3;
     constexpr int kReloadPollEvery = 15;
 
+    bool isInstrumentFile (const juce::String& path)
+    {
+        return path.endsWithIgnoreCase (".sfz")
+            || path.endsWithIgnoreCase (".sfzbundle");
+    }
+
+    bool isScalaFile (const juce::String& path)
+    {
+        return path.endsWithIgnoreCase (".scl");
+    }
+
     juce::String mimeForExtension (const juce::String& ext)
     {
         if (ext == "html")  return "text/html";
@@ -158,7 +169,7 @@ void PlayerEditor::resized()
 bool PlayerEditor::isInterestedInFileDrag (const juce::StringArray& files)
 {
     for (const auto& f : files)
-        if (f.endsWithIgnoreCase (".sfz") || f.endsWithIgnoreCase (".scl"))
+        if (isInstrumentFile (f) || isScalaFile (f))
             return true;
     return false;
 }
@@ -167,7 +178,7 @@ void PlayerEditor::filesDropped (const juce::StringArray& files, int, int)
 {
     for (const auto& f : files)
     {
-        if (f.endsWithIgnoreCase (".sfz"))
+        if (isInstrumentFile (f))
         {
             if (processor.loadSfzFile (juce::File (f)))
             {
@@ -175,7 +186,7 @@ void PlayerEditor::filesDropped (const juce::StringArray& files, int, int)
                 return;
             }
         }
-        else if (f.endsWithIgnoreCase (".scl"))
+        else if (isScalaFile (f))
         {
             if (processor.loadScalaFile (juce::File (f)) && webView != nullptr)
             {
@@ -348,7 +359,7 @@ void PlayerEditor::handleLoadSfz (const juce::Array<juce::var>&, Completion comp
     if (! initial.existsAsFile())
         initial = juce::File::getSpecialLocation (juce::File::userMusicDirectory);
 
-    chooser = std::make_unique<juce::FileChooser> ("Load SFZ instrument", initial, "*.sfz;*.sfzbundle");
+    chooser = std::make_unique<juce::FileChooser> ("Load SFZ or SFZ Bundle", initial, "*.sfz;*.sfzbundle");
     const auto flags = juce::FileBrowserComponent::openMode
                      | juce::FileBrowserComponent::canSelectFiles;
 

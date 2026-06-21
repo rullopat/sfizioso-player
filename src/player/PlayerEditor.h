@@ -35,7 +35,7 @@ public:
     void paint (juce::Graphics&) override;
 
     // SMPL-89 / SMPL-87 — native file drop (the WKWebView passes OS file drags
-    // through to the parent target; .sfz loads the instrument, .scl the scale).
+    // through to the parent target; .sfz/.sfzbundle load the instrument, .scl the scale).
     bool isInterestedInFileDrag (const juce::StringArray& files) override;
     void filesDropped (const juce::StringArray& files, int x, int y) override;
 

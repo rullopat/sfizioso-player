@@ -54,7 +54,7 @@ export function TopBar({ productName, sampleName, meta, onLoad }: Props) {
       <div className="topbar-center">
         <div className="sample-slot-wrap">
           <button className="sample-slot" onClick={onLoad}>
-            <span className="sample-slot-label">SFZ</span>
+            <span className="sample-slot-label">SFZ / BUNDLE</span>
             <span className="sample-slot-name">{sampleName}</span>
           </button>
           <button
