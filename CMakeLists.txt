@@ -47,6 +47,31 @@ if(PROJECT_IS_TOP_LEVEL)
     endif()
 
     add_subdirectory(external/sfizioso EXCLUDE_FROM_ALL)
+
+    if(MSVC)
+        function(sfizioso_collect_subdirectory_targets directory output_var)
+            get_property(_targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
+            get_property(_subdirectories DIRECTORY "${directory}" PROPERTY SUBDIRECTORIES)
+
+            foreach(_subdirectory IN LISTS _subdirectories)
+                sfizioso_collect_subdirectory_targets("${_subdirectory}" _subdirectory_targets)
+                list(APPEND _targets ${_subdirectory_targets})
+            endforeach()
+
+            set(${output_var} ${_targets} PARENT_SCOPE)
+        endfunction()
+
+        # The vendored sfizioso project forces /MT for MSVC, while JUCE's plugin
+        # client targets default to /MD. The Windows VST3 links both into one
+        # DLL, so keep sfizioso and its vendored deps on the same runtime.
+        sfizioso_collect_subdirectory_targets(
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/sfizioso"
+            _sfizioso_targets)
+        foreach(_sfizioso_target IN LISTS _sfizioso_targets)
+            set_target_properties(${_sfizioso_target} PROPERTIES
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+        endforeach()
+    endif()
 endif()
 
 # ---------------------------------------------------------------------------
