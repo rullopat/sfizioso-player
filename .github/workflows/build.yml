@@ -28,6 +28,21 @@ jobs:
       - name: Build Sfizioso Player (VST3 / AU / Standalone)
         run: cmake --build build --config Release
 
+      - name: Package macOS artifacts
+        run: |
+          mkdir -p artifacts/macos
+          tar -czf artifacts/macos/sfizioso-player-macos.tar.gz \
+            -C "build/SfiziosoPlayer_artefacts/Release/Standalone" "Sfizioso Player.app" \
+            -C "build/SfiziosoPlayer_artefacts/Release/AU" "Sfizioso Player.component" \
+            -C "build/SfiziosoPlayer_artefacts/Release/VST3" "Sfizioso Player.vst3"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: sfizioso-player-macos
+          if-no-files-found: error
+          path: artifacts/macos/sfizioso-player-macos.tar.gz
+
   windows:
     name: build (Windows)
     runs-on: windows-latest
