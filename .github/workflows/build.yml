@@ -10,17 +10,17 @@ jobs:
     name: build (macOS)
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Install Ninja
         run: brew install ninja
 
-      # macos-14 runners ship Node; pin it for the WebView UI build (Vite).
-      - uses: actions/setup-node@v4
+      # Pin the WebView UI build runtime separately from the GitHub Action runtime.
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Configure
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -32,17 +32,13 @@ jobs:
     name: build (Windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
+          node-version: 24
 
       - name: Install WebView2 SDK
         shell: pwsh
@@ -53,19 +49,17 @@ jobs:
           -NonInteractive
           -Source https://api.nuget.org/v3/index.json
 
-      - name: Configure
-        shell: pwsh
-        run: >
-          cmake -B build
-          -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DJUCE_WEBVIEW2_PACKAGE_LOCATION="$env:RUNNER_TEMP\webview2"
-
-      - name: Build Sfizioso Player (VST3 / Standalone)
-        run: cmake --build build
+      - name: Configure and build Sfizioso Player (VST3 / Standalone)
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VS_PATH=%%i"
+          if "%VS_PATH%"=="" exit /b 1
+          call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_WEBVIEW2_PACKAGE_LOCATION="%RUNNER_TEMP%\webview2"
+          cmake --build build
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sfizioso-player-windows
           if-no-files-found: warn
