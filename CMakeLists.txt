@@ -7,6 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "macOS deployment target")
 
+set(SFIZIOSO_PLAYER_BASE_BUNDLE_ID "com.sfizioso.player")
+set(SFIZIOSO_PLAYER_PLUGIN_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.plugin")
+set(SFIZIOSO_PLAYER_AU_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.au")
+set(SFIZIOSO_PLAYER_VST3_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.vst3")
+set(SFIZIOSO_PLAYER_STANDALONE_BUNDLE_ID "com.sfizioso.player.standalone")
+
 # Shared WebView-UI build helper (npm install -> vite build -> zip -> embed).
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddWebviewUi.cmake)
 
@@ -93,6 +99,37 @@ endif()
 set(SFIZIOSO_UI_SHARED ${CMAKE_CURRENT_SOURCE_DIR}/src/ui-shared/src
     CACHE PATH "Sfizioso shared React UI source directory")
 
+function(sfizioso_set_wrapper_bundle_id source_target wrapper_kind bundle_id)
+    if(NOT APPLE)
+        return()
+    endif()
+
+    set(wrapper_target "${source_target}_${wrapper_kind}")
+
+    if(TARGET ${wrapper_target})
+        set_target_properties(${wrapper_target} PROPERTIES
+            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${bundle_id}")
+    endif()
+
+    get_target_property(generated_sources ${source_target} JUCE_GENERATED_SOURCES_DIRECTORY)
+    if(NOT generated_sources)
+        message(FATAL_ERROR "JUCE_GENERATED_SOURCES_DIRECTORY is missing for ${source_target}")
+    endif()
+
+    set(info_plist "${generated_sources}/${wrapper_target}/Info.plist")
+    if(NOT EXISTS "${info_plist}")
+        message(FATAL_ERROR "Expected generated Info.plist not found: ${info_plist}")
+    endif()
+
+    file(READ "${info_plist}" plist_contents)
+    string(REGEX REPLACE
+        "(<key>CFBundleIdentifier</key>[ \t\r\n]*<string>)[^<]+(</string>)"
+        "\\1${bundle_id}\\2"
+        patched_plist
+        "${plist_contents}")
+    file(WRITE "${info_plist}" "${patched_plist}")
+endfunction()
+
 # ---------------------------------------------------------------------------
 # Sfizioso Player — the standalone / plugin application. AGPLv3.
 # Built only when this repo is the top-level project; consumers take just the
@@ -102,7 +139,7 @@ if(PROJECT_IS_TOP_LEVEL)
     juce_add_plugin(SfiziosoPlayer
         VERSION 0.8.0
         COMPANY_NAME "Sfizioso"
-        BUNDLE_ID com.sfizioso.player
+        BUNDLE_ID ${SFIZIOSO_PLAYER_PLUGIN_BUNDLE_ID}
         PLUGIN_MANUFACTURER_CODE PtRl
         PLUGIN_CODE Sfzo
         FORMATS VST3 AU Standalone
@@ -113,6 +150,15 @@ if(PROJECT_IS_TOP_LEVEL)
         IS_MIDI_EFFECT FALSE
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE
         COPY_PLUGIN_AFTER_BUILD TRUE)
+
+    # Give every macOS wrapper its own bundle ID. Logic project compatibility is
+    # keyed by the AU type/subtype/manufacturer triple (aumu/Sfzo/PtRl), while
+    # duplicate CFBundleIdentifier values can make LaunchServices/window
+    # restoration activate the standalone app when the AU is restored.
+    sfizioso_set_wrapper_bundle_id(SfiziosoPlayer AU ${SFIZIOSO_PLAYER_AU_BUNDLE_ID})
+    sfizioso_set_wrapper_bundle_id(SfiziosoPlayer VST3 ${SFIZIOSO_PLAYER_VST3_BUNDLE_ID})
+    sfizioso_set_wrapper_bundle_id(SfiziosoPlayer Standalone
+        ${SFIZIOSO_PLAYER_STANDALONE_BUNDLE_ID})
 
     target_sources(SfiziosoPlayer PRIVATE
         src/player/PlayerProcessor.cpp
