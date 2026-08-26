@@ -27,7 +27,8 @@ public:
         CC,
         PitchBend,
         ChannelPressure,
-        PolyAftertouch
+        PolyAftertouch,
+        ProgramChange
     };
 
     struct Event

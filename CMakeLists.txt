@@ -24,6 +24,10 @@ set(SFIZIOSO_PLAYER_AU_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.au")
 set(SFIZIOSO_PLAYER_VST3_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.vst3")
 set(SFIZIOSO_PLAYER_STANDALONE_BUNDLE_ID "com.sfizioso.player.standalone")
 
+option(SFIZIOSO_PLAYER_TESTS
+    "Build player_core integration tests (defaults to top-level builds only)"
+    ${PROJECT_IS_TOP_LEVEL})
+
 # Shared WebView-UI build helper (npm install -> vite build -> zip -> embed).
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddWebviewUi.cmake)
 
@@ -137,6 +141,36 @@ if(SAMPLEMACHINE_DEBUG_MIDI_PANEL)
     target_sources(player_core PRIVATE src/player_core/DebugMidiPanel.cpp)
     target_compile_definitions(player_core PUBLIC SAMPLEMACHINE_DEBUG_MIDI_PANEL=1)
     target_link_libraries(player_core PUBLIC juce::juce_gui_basics)
+endif()
+
+# ---------------------------------------------------------------------------
+# player_core integration tests. These default on only for this repository's
+# top-level build, so parent consumers do not acquire Catch2 or test targets.
+# ---------------------------------------------------------------------------
+if(SFIZIOSO_PLAYER_TESTS)
+    # sfizioso's vendored dependencies force the generic BUILD_TESTING cache
+    # option off; explicitly enable CTest for this repository's own target.
+    enable_testing()
+    include(FetchContent)
+
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.4)
+    FetchContent_MakeAvailable(Catch2)
+
+    add_executable(sfizioso_player_tests
+        tests/PlayerEngineProgramChangeTests.cpp)
+    target_link_libraries(sfizioso_player_tests
+        PRIVATE player_core Catch2::Catch2WithMain)
+    target_compile_features(sfizioso_player_tests PRIVATE cxx_std_17)
+    target_compile_definitions(sfizioso_player_tests PRIVATE
+        JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=0)
+
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    include(Catch)
+    catch_discover_tests(sfizioso_player_tests)
 endif()
 
 # Export the shared React UI source dir so consumers' Vite aliases + the
