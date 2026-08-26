@@ -92,8 +92,6 @@ juce::String DebugMidiPanel::formatEvent (const DebugMidiCapture::Event& e,
             return fmtMs() + " ms  ch" + chStr + "  ChPress       val=" + juce::String (e.data1);
         case DebugMidiCapture::EventType::PolyAftertouch:
             return fmtMs() + " ms  ch" + chStr + "  PolyAT  note=" + juce::String (e.data1) + " val=" + juce::String (e.data2);
-        case DebugMidiCapture::EventType::ProgramChange:
-            return fmtMs() + " ms  ch" + chStr + "  Program       num=" + juce::String (e.data1);
     }
     return {};
 }

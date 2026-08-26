@@ -263,11 +263,11 @@ void PlayerEngine::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuf
         else if (msg.isPitchWheel())      pushDebug (DebugMidiCapture::EventType::PitchBend,       msg.getPitchWheelValue() - 8192, 0);
         else if (msg.isChannelPressure()) pushDebug (DebugMidiCapture::EventType::ChannelPressure, msg.getChannelPressureValue(),   0);
         else if (msg.isAftertouch())      pushDebug (DebugMidiCapture::EventType::PolyAftertouch,  msg.getNoteNumber(),       msg.getAfterTouchValue());
-        else if (msg.isProgramChange())   pushDebug (DebugMidiCapture::EventType::ProgramChange,   msg.getProgramChangeNumber(), 0);
 
-        // Dispatch channel-bearing performance messages through the channel-
-        // aware entry points. The engine preserves the source channel for SFZ
-        // routing and normalizes expression internally when MPE is disabled.
+        // Dispatch unconditionally through the *MPE entry points. The engine
+        // normalizes channel to 0 internally when MPE is disabled (see
+        // sfz::Synth::setMPEEnabled), so MpeMode::None / Pressure callers
+        // get pre-fork single-channel behaviour without an extra branch here.
         if (msg.isNoteOn())
             synth->noteOn (delay, channel, msg.getNoteNumber(), msg.getVelocity());
         else if (msg.isNoteOff())
@@ -280,15 +280,6 @@ void PlayerEngine::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuf
             synth->channelAftertouch (delay, channel, msg.getChannelPressureValue());
         else if (msg.isAftertouch())
             synth->polyAftertouch (delay, channel, msg.getNoteNumber(), msg.getAfterTouchValue());
-        else if (msg.isProgramChange())
-        {
-            // sfizioso's existing loprog/hiprog state is global. MPE 1.0
-            // Mode 3 permits Program Change only on the Manager Channel.
-            // Query live engine state so an RPN 6 MCM earlier in this block
-            // can enable MPE before a later Program Change is considered.
-            if (! getMpeEnabled() || channel == 0)
-                synth->programChange (delay, msg.getProgramChangeNumber());
-        }
     }
 
     float* outputs[2] = { buffer.getWritePointer (0), buffer.getWritePointer (1) };

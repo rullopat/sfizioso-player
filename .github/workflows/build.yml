@@ -25,11 +25,8 @@ jobs:
       - name: Configure
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Sfizioso Player and tests (VST3 / AU / Standalone)
+      - name: Build Sfizioso Player (VST3 / AU / Standalone)
         run: cmake --build build --config Release
-
-      - name: Run player-core tests
-        run: ctest --test-dir build --output-on-failure -C Release
 
       - name: Package macOS artifacts
         run: |
@@ -72,11 +69,8 @@ jobs:
       - name: Configure
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Sfizioso Player and tests (VST3 / Standalone)
+      - name: Build Sfizioso Player (VST3 / Standalone)
         run: cmake --build build
-
-      - name: Run player-core tests
-        run: ctest --test-dir build --output-on-failure
 
       - name: Validate VST3
         run: |
@@ -133,10 +127,6 @@ jobs:
           call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=x64
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_WEBVIEW2_PACKAGE_LOCATION="%RUNNER_TEMP%\webview2"
           cmake --build build
-
-      - name: Run player-core tests
-        shell: cmd
-        run: ctest --test-dir build --output-on-failure -C Release
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7

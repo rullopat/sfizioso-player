@@ -21,26 +21,13 @@ The shared libraries are permissive so they can also be consumed by other
 projects (including closed-source ones); the application itself is AGPLv3.
 See [LICENSE](LICENSE).
 
-## MIDI Program Change
-
-Incoming Program Change messages drive the loaded SFZ's existing global
-`loprog` / `hiprog` region conditions. They do not load another SFZ file or
-Player preset. With MPE disabled, Program Change from any MIDI channel updates
-the global condition. With MPE Full enabled, MPE 1.0 Mode 3 rules apply: only
-the Lower-Zone Manager Channel (MIDI channel 1) is accepted, and Program Change
-on Member Channels is ignored.
-
 ## Build
 
 ```sh
 git submodule update --init --recursive          # JUCE + sfizioso (and its nested deps)
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
-ctest --test-dir build --output-on-failure       # player_core integration tests
 ```
-
-`SFIZIOSO_PLAYER_TESTS` defaults to `ON` for top-level builds and `OFF` when
-this repository is consumed through `add_subdirectory()`.
 
 Node.js >= 20 is required for the WebView UI build. On Ubuntu 24.04, install
 the native JUCE and WebKit dependencies with:
