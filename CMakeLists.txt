@@ -109,6 +109,7 @@ option(SAMPLEMACHINE_DEBUG_MIDI_PANEL
 add_library(core_prefs STATIC src/core_prefs/PreferenceStore.cpp)
 target_include_directories(core_prefs PUBLIC src/core_prefs)
 target_link_libraries(core_prefs PUBLIC juce::juce_core)
+target_compile_definitions(core_prefs PRIVATE JUCE_USE_CURL=0)
 
 # ---------------------------------------------------------------------------
 # player_core — sfizioso wrapper (APVTS params + MIDI dispatch + renderBlock).
@@ -124,7 +125,9 @@ target_link_libraries(player_core
 # juce_gui_extra into this static target on Linux, but the browser backend is
 # needed only by the app/editor target; disabling it here avoids requiring GTK /
 # WebKit compile flags for the core library itself.
-target_compile_definitions(player_core PRIVATE JUCE_WEB_BROWSER=0)
+target_compile_definitions(player_core PRIVATE
+    JUCE_USE_CURL=0
+    JUCE_WEB_BROWSER=0)
 
 if(SAMPLEMACHINE_SFIZZ_HAS_MPE)
     target_compile_definitions(player_core PUBLIC SAMPLEMACHINE_SFIZZ_HAS_MPE=1)
