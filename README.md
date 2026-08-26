@@ -29,10 +29,21 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-Prerequisites (macOS): `brew install node` (Node >= 20) for the WebView UI build.
+Node.js >= 20 is required for the WebView UI build. On Ubuntu 24.04, install
+the native JUCE and WebKit dependencies with:
 
-Artefacts land under `build/SfiziosoPlayer_artefacts/` (VST3 / AU copied to the
-user plugin folders; a Standalone app for use without a DAW).
+```sh
+sudo apt install ninja-build libasound2-dev libfreetype-dev libfontconfig1-dev \
+  libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+  libxrandr-dev libxrender-dev libwebkit2gtk-4.1-dev libglu1-mesa-dev \
+  mesa-common-dev
+```
+
+On macOS, `brew install node ninja` installs the additional build tools.
+
+Artefacts land under `build/SfiziosoPlayer_artefacts/`: VST3 and Standalone on
+Linux and Windows, plus AU on macOS. Plugin builds are copied to the platform's
+user plugin folder by default.
 
 ## Consuming the foundation
 

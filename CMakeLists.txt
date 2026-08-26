@@ -2,10 +2,21 @@ cmake_minimum_required(VERSION 3.22)
 
 project(SfiziosoPlayer VERSION 0.10.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+# Keep the whole dependency tree on at least C++17. The vendored sfizioso
+# CMake defaults to C++14 when it owns the cache, but its current sources use
+# hexadecimal floating-point literals which GCC accepts only in C++17 or later.
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to be used")
+if(CMAKE_CXX_STANDARD LESS 17)
+    set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to be used" FORCE)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "macOS deployment target")
+
+# Linux VST3 links static libraries into a shared-object plugin.
+if(UNIX AND NOT APPLE)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 set(SFIZIOSO_PLAYER_BASE_BUNDLE_ID "com.sfizioso.player")
 set(SFIZIOSO_PLAYER_PLUGIN_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.plugin")
@@ -109,6 +120,12 @@ target_link_libraries(player_core
     PUBLIC  juce::juce_audio_processors
     PRIVATE sfizioso::sfizioso)
 
+# player_core uses JUCE audio/plugin primitives only. juce_audio_processors pulls
+# juce_gui_extra into this static target on Linux, but the browser backend is
+# needed only by the app/editor target; disabling it here avoids requiring GTK /
+# WebKit compile flags for the core library itself.
+target_compile_definitions(player_core PRIVATE JUCE_WEB_BROWSER=0)
+
 if(SAMPLEMACHINE_SFIZZ_HAS_MPE)
     target_compile_definitions(player_core PUBLIC SAMPLEMACHINE_SFIZZ_HAS_MPE=1)
 endif()
@@ -174,6 +191,7 @@ if(PROJECT_IS_TOP_LEVEL)
         NEEDS_MIDI_OUTPUT FALSE
         IS_MIDI_EFFECT FALSE
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+        NEEDS_WEB_BROWSER TRUE
         NEEDS_WEBVIEW2 TRUE
         COPY_PLUGIN_AFTER_BUILD TRUE)
 

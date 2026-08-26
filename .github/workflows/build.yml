@@ -44,6 +44,60 @@ jobs:
           if-no-files-found: error
           path: artifacts/macos/sfizioso-player-macos.tar.gz
 
+  linux:
+    name: build and validate (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install Linux build and WebView dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build xvfb xauth \
+            libasound2-dev libfreetype-dev libfontconfig1-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev \
+            libxinerama-dev libxrandr-dev libxrender-dev \
+            libwebkit2gtk-4.1-dev libglu1-mesa-dev mesa-common-dev
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Sfizioso Player (VST3 / Standalone)
+        run: cmake --build build
+
+      - name: Validate VST3
+        run: |
+          curl -L --fail --retry 3 -o pluginval.zip \
+            https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Linux.zip
+          echo "c01c49d8063965c4c2dea8324468336768f5c9139e0b1caebde14c2400b55352  pluginval.zip" \
+            | sha256sum --check
+          unzip -q pluginval.zip -d pluginval
+          chmod +x pluginval/pluginval
+          xvfb-run -a pluginval/pluginval --strictness-level 5 --validate \
+            "$PWD/build/SfiziosoPlayer_artefacts/Release/VST3/Sfizioso Player.vst3"
+
+      - name: Package Linux artifacts
+        run: |
+          mkdir -p artifacts/linux
+          tar -czf artifacts/linux/sfizioso-player-linux.tar.gz \
+            -C "build/SfiziosoPlayer_artefacts/Release" \
+            "Standalone/Sfizioso Player" \
+            "VST3/Sfizioso Player.vst3"
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: sfizioso-player-linux
+          if-no-files-found: error
+          path: artifacts/linux/sfizioso-player-linux.tar.gz
+
   windows:
     name: build (Windows)
     runs-on: windows-latest
