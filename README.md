@@ -6,6 +6,8 @@ An open SFZ player (VST3 / AU / Standalone) and the shared foundation it is
 built on, powered by the [sfizioso](https://github.com/rullopat/sfizioso) SFZ
 engine — an independent, MPE-capable fork of sfizz.
 
+![Sfizioso Player UI](docs/assets/sfizioso-player-ui.png)
+
 ## What's here
 
 | Path | What | License |
