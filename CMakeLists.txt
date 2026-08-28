@@ -160,6 +160,7 @@ if(SFIZIOSO_PLAYER_TESTS)
     FetchContent_MakeAvailable(Catch2)
 
     add_executable(sfizioso_player_tests
+        tests/PlayerEngineChannelRoutingTests.cpp
         tests/PlayerEngineProgramChangeTests.cpp)
     target_link_libraries(sfizioso_player_tests
         PRIVATE player_core Catch2::Catch2WithMain)

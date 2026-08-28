@@ -282,12 +282,10 @@ void PlayerEngine::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuf
             synth->polyAftertouch (delay, channel, msg.getNoteNumber(), msg.getAfterTouchValue());
         else if (msg.isProgramChange())
         {
-            // sfizioso's existing loprog/hiprog state is global. MPE 1.0
-            // Mode 3 permits Program Change only on the Manager Channel.
-            // Query live engine state so an RPN 6 MCM earlier in this block
-            // can enable MPE before a later Program Change is considered.
-            if (! getMpeEnabled() || channel == 0)
-                synth->programChange (delay, msg.getProgramChangeNumber());
+            // The engine adapter owns live Mode-3 Manager/Member policy and
+            // resolves accepted input to global/zone/source routing state.
+            // This also observes an RPN 6 MCM earlier in the same block.
+            synth->programChange (delay, channel, msg.getProgramChangeNumber());
         }
     }
 

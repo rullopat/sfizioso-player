@@ -21,14 +21,31 @@ The shared libraries are permissive so they can also be consumed by other
 projects (including closed-source ones); the application itself is AGPLv3.
 See [LICENSE](LICENSE).
 
+## Fixed-channel SFZ routing
+
+Sfizioso Player preserves incoming MIDI channels for SFZ `lochan` / `hichan`
+ranges and source-scoped conditions; it does not remap them. The controller,
+Standalone MIDI path, or plugin host must therefore preserve the authored
+channel into the Player.
+
+Use **MPE None** for conventional fixed-channel articulation instruments,
+especially ones using Bank Select (CC0/CC32), pedals, or other controls which
+MPE defines as Manager-only. Use **MPE Full** for MPE controllers: dynamically
+assigned Member Channels still participate in `lochan` / `hichan` eligibility,
+but are usually unsuitable as fixed articulation selectors and retain every
+MPE message filter. The Player does not change MPE mode automatically after
+loading an SFZ.
+
 ## MIDI Program Change
 
-Incoming Program Change messages drive the loaded SFZ's existing global
-`loprog` / `hiprog` region conditions. They do not load another SFZ file or
-Player preset. With MPE disabled, Program Change from any MIDI channel updates
-the global condition. With MPE Full enabled, MPE 1.0 Mode 3 rules apply: only
-the Lower-Zone Manager Channel (MIDI channel 1) is accepted, and Program Change
-on Member Channels is ignored.
+Incoming Program Change drives `loprog` / `hiprog` conditions inside the
+loaded SFZ; it never loads another SFZ, bank, or Player preset. With MPE
+disabled, the incoming channel is retained for channel-restricted regions while
+the ordinary global/omni condition also follows the latest accepted Program
+Change. This allows restricted channels to select programs independently
+without changing existing omni instruments. With MPE Full enabled, MPE 1.0
+Mode 3 rules apply: the Lower-Zone Manager Channel (MIDI channel 1) updates the
+whole zone and global view, while Program Change on Member Channels is ignored.
 
 ## Build
 
