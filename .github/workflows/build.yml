@@ -28,7 +28,7 @@ jobs:
       - name: Build Sfizioso Player and tests (VST3 / AU / Standalone)
         run: cmake --build build --config Release
 
-      - name: Run player-core tests
+      - name: Run tests
         run: ctest --test-dir build --output-on-failure -C Release
 
       - name: Package macOS artifacts
@@ -75,7 +75,7 @@ jobs:
       - name: Build Sfizioso Player and tests (VST3 / Standalone)
         run: cmake --build build
 
-      - name: Run player-core tests
+      - name: Run tests
         run: ctest --test-dir build --output-on-failure
 
       - name: Validate VST3
@@ -134,7 +134,7 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_WEBVIEW2_PACKAGE_LOCATION="%RUNNER_TEMP%\webview2"
           cmake --build build
 
-      - name: Run player-core tests
+      - name: Run tests
         shell: cmd
         run: ctest --test-dir build --output-on-failure -C Release
 
