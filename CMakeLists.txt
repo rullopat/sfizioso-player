@@ -107,6 +107,16 @@ option(SAMPLEMACHINE_DEBUG_MIDI_PANEL
     ${_default_debug_midi_panel})
 
 # ---------------------------------------------------------------------------
+# sfzbundle — dependency-free version-2 container format and validated parser.
+# The alias is the public target consumed by parent builds.
+# ---------------------------------------------------------------------------
+add_library(sfizioso_bundle STATIC src/sfzbundle/Parser.cpp)
+add_library(sfizioso_player::sfzbundle ALIAS sfizioso_bundle)
+target_include_directories(sfizioso_bundle PUBLIC src)
+target_compile_features(sfizioso_bundle PUBLIC cxx_std_17)
+set_target_properties(sfizioso_bundle PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+# ---------------------------------------------------------------------------
 # core_prefs — global user preference store (theme persistence). BSD-2-Clause.
 # Consumed by the Sfizioso Player and by the private branded romplers.
 # ---------------------------------------------------------------------------
@@ -164,11 +174,13 @@ if(SFIZIOSO_PLAYER_TESTS)
         tests/PlayerEngineChannelRoutingTests.cpp
         tests/PlayerEngineProgramChangeTests.cpp
         tests/PortableBundleTests.cpp
+        tests/SfzBundleParserTests.cpp
         src/player/PortableBundle.cpp)
     target_include_directories(sfizioso_player_tests PRIVATE src/player)
     target_link_libraries(sfizioso_player_tests
         PRIVATE
             player_core
+            sfizioso_player::sfzbundle
             sfizioso::sfizioso
             juce::juce_core
             Catch2::Catch2WithMain)
@@ -266,6 +278,7 @@ if(PROJECT_IS_TOP_LEVEL)
         PRIVATE
             juce::juce_audio_utils
             player_core
+            sfizioso_player::sfzbundle
             sfizioso::sfizioso
             core_prefs            # SMPL-89 recent-files persistence
         PUBLIC

@@ -14,6 +14,7 @@ engine — an independent, MPE-capable fork of sfizz.
 |------|------|---------|
 | `src/player_core/` | sfizioso engine wrapper (APVTS params, MIDI dispatch, render) | BSD-2-Clause |
 | `src/core_prefs/`  | global user preference store (theme persistence) | BSD-2-Clause |
+| `src/sfzbundle/`   | dependency-free `.sfzbundle` format and validated parser | BSD-2-Clause |
 | `src/ui-shared/`   | React UI kit + C++/JS bridge (`juceBridge`, `useParam`, knobs, meters, design tokens) | BSD-2-Clause |
 | `src/player/`      | the Sfizioso Player application (JUCE + React WebView editor) | AGPL-3.0 |
 
