@@ -6,6 +6,7 @@ This repository is licensed by component:
 - BSD 2-Clause License — the shared libraries and UI kit:
     src/player_core/   (sfizioso engine wrapper)
     src/core_prefs/    (preference store)
+    src/sfzbundle/     (dependency-free bundle format and parser)
     src/ui-shared/     (React UI kit + C++/JS bridge)
   Full text: LICENSE-BSD-2-Clause.txt
 
