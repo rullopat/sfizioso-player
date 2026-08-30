@@ -25,7 +25,7 @@ set(SFIZIOSO_PLAYER_VST3_BUNDLE_ID "${SFIZIOSO_PLAYER_BASE_BUNDLE_ID}.vst3")
 set(SFIZIOSO_PLAYER_STANDALONE_BUNDLE_ID "com.sfizioso.player.standalone")
 
 option(SFIZIOSO_PLAYER_TESTS
-    "Build player_core integration tests (defaults to top-level builds only)"
+    "Build Sfizioso Player tests (defaults to top-level builds only)"
     ${PROJECT_IS_TOP_LEVEL})
 
 # Shared WebView-UI build helper (npm install -> vite build -> zip -> embed).
@@ -144,8 +144,9 @@ if(SAMPLEMACHINE_DEBUG_MIDI_PANEL)
 endif()
 
 # ---------------------------------------------------------------------------
-# player_core integration tests. These default on only for this repository's
-# top-level build, so parent consumers do not acquire Catch2 or test targets.
+# Player integration and portable-bundle tests. These default on only for this
+# repository's top-level build, so parent consumers do not acquire Catch2 or
+# test targets.
 # ---------------------------------------------------------------------------
 if(SFIZIOSO_PLAYER_TESTS)
     # sfizioso's vendored dependencies force the generic BUILD_TESTING cache
@@ -161,9 +162,16 @@ if(SFIZIOSO_PLAYER_TESTS)
 
     add_executable(sfizioso_player_tests
         tests/PlayerEngineChannelRoutingTests.cpp
-        tests/PlayerEngineProgramChangeTests.cpp)
+        tests/PlayerEngineProgramChangeTests.cpp
+        tests/PortableBundleTests.cpp
+        src/player/PortableBundle.cpp)
+    target_include_directories(sfizioso_player_tests PRIVATE src/player)
     target_link_libraries(sfizioso_player_tests
-        PRIVATE player_core Catch2::Catch2WithMain)
+        PRIVATE
+            player_core
+            sfizioso::sfizioso
+            juce::juce_core
+            Catch2::Catch2WithMain)
     target_compile_features(sfizioso_player_tests PRIVATE cxx_std_17)
     target_compile_definitions(sfizioso_player_tests PRIVATE
         JUCE_USE_CURL=0

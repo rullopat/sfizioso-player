@@ -53,7 +53,7 @@ whole zone and global view, while Program Change on Member Channels is ignored.
 git submodule update --init --recursive          # JUCE + sfizioso (and its nested deps)
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
-ctest --test-dir build --output-on-failure       # player_core integration tests
+ctest --test-dir build --output-on-failure       # integration and bundle tests
 ```
 
 `SFIZIOSO_PLAYER_TESTS` defaults to `ON` for top-level builds and `OFF` when
