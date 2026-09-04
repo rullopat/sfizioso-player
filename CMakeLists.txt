@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(SfiziosoPlayer VERSION 0.12.0 LANGUAGES C CXX)
+project(SfiziosoPlayer VERSION 0.12.1 LANGUAGES C CXX)
 
 # Keep the whole dependency tree on at least C++17. The vendored sfizioso
 # CMake defaults to C++14 when it owns the cache, but its current sources use
@@ -237,7 +237,7 @@ endfunction()
 # ---------------------------------------------------------------------------
 if(PROJECT_IS_TOP_LEVEL)
     juce_add_plugin(SfiziosoPlayer
-        VERSION 0.12.0
+        VERSION 0.12.1
         COMPANY_NAME "Sfizioso"
         BUNDLE_ID ${SFIZIOSO_PLAYER_PLUGIN_BUNDLE_ID}
         PLUGIN_MANUFACTURER_CODE PtRl
