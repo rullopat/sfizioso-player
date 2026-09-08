@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(SfiziosoPlayer VERSION 0.12.3 LANGUAGES C CXX)
+project(SfiziosoPlayer VERSION 1.0.0 LANGUAGES C CXX)
+# Native plugin formats require numeric versions; expose the prerelease in the UI.
+set(SFIZIOSO_PLAYER_RELEASE_VERSION "1.0.0-rc.1")
 
 # Keep the whole dependency tree on at least C++17. The vendored sfizioso
 # CMake defaults to C++14 when it owns the cache, but its current sources use
@@ -255,7 +257,7 @@ endfunction()
 # ---------------------------------------------------------------------------
 if(PROJECT_IS_TOP_LEVEL)
     juce_add_plugin(SfiziosoPlayer
-        VERSION 0.12.3
+        VERSION ${PROJECT_VERSION}
         COMPANY_NAME "Sfizioso"
         BUNDLE_ID ${SFIZIOSO_PLAYER_PLUGIN_BUNDLE_ID}
         PLUGIN_MANUFACTURER_CODE PtRl
@@ -288,6 +290,7 @@ if(PROJECT_IS_TOP_LEVEL)
     target_include_directories(SfiziosoPlayer PRIVATE src/player)
 
     target_compile_definitions(SfiziosoPlayer PUBLIC
+        SFIZIOSO_PLAYER_RELEASE_VERSION="${SFIZIOSO_PLAYER_RELEASE_VERSION}"
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         $<$<PLATFORM_ID:Windows>:JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1>)

@@ -24,15 +24,15 @@ The shared libraries are permissive so they can also be consumed by other
 projects (including closed-source ones); the application itself is AGPLv3.
 See [LICENSE](LICENSE).
 
-## Instrument presentation (v1 draft)
+## Instrument presentation (v1 release candidate)
 
 Give an SFZ instrument its own names, artwork, and organised controls with an
 optional **`instrument.json`** file. The Player renders the presentation; the SFZ
 continues to define the sound, MIDI mappings, and controller defaults.
 
-This feature is implemented on the current feature branch and is under review in
-[PR #8](https://github.com/rullopat/sfizioso-player/pull/8). It is not included in
-release 0.12.3. The discussion lives in
+Included in **1.0.0-rc.1**, a prerelease for compatibility testing before 1.0.0.
+The release candidate is under review in [PR #8](https://github.com/rullopat/sfizioso-player/pull/8).
+The discussion lives in
 [issue #9](https://github.com/rullopat/sfizioso-player/issues/9).
 
 ### Try the examples
@@ -312,6 +312,11 @@ without changing existing omni instruments. With MPE Full enabled, MPE 1.0
 Mode 3 rules apply: the Lower-Zone Manager Channel (MIDI channel 1) updates the
 whole zone and global view, while Program Change on Member Channels is ignored.
 
+## Release candidate
+
+See the [RC1 release notes and compatibility checks](docs/releases/1.0.0-rc.1.md)
+before testing this candidate in existing DAW projects.
+
 ## Build
 
 The build pins JUCE **9.0.2**. Its WebView frontend is bundled from the same
@@ -393,4 +398,4 @@ explicit SPDX identifiers on the extracted presentation sources. Preserve the
 copyright notice and licence conditions. JUCE and other dependencies retain
 their own licences; extracting this feature does not change those terms.
 Sample Machine and branded products still need consumer integration and a pin
-update after this draft is ready.
+update after the release candidate is accepted.

@@ -27,6 +27,9 @@ try {
  await page.getByText('Evening Signals',{exact:true}).waitFor();
  assert.equal(await page.getByText('EXPERIMENTAL', {exact:true}).count(), 0);
  assert.equal(await page.getByText('COMING SOON', {exact:true}).count(), 0);
+ await page.getByRole('button', {name:'MPE',exact:true}).click();
+ assert.deepEqual(await page.locator('.mpe-panel .segmented').first().getByRole('button').allTextContents(), ['OFF','FULL']);
+ await page.getByRole('button', {name:'OUTPUT',exact:true}).click();
  assert.deepEqual(await page.locator('.cc-section h3').allTextContents(),['Tone','Expression']);
  const slider=page.getByRole('slider',{name:'Volume',exact:true});
  assert.equal(await slider.inputValue(),'100');

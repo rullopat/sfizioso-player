@@ -355,7 +355,7 @@ void PlayerEditor::handleGetAppInfo (const juce::Array<juce::var>&, Completion c
     // defines (CMake PRODUCT_NAME / VERSION). The UI no longer hardcodes them.
     juce::DynamicObject::Ptr obj = new juce::DynamicObject();
     obj->setProperty ("productName", juce::String (JucePlugin_Name));
-    obj->setProperty ("version",     juce::String (JucePlugin_VersionString));
+    obj->setProperty ("version",     juce::String (SFIZIOSO_PLAYER_RELEASE_VERSION));
     completion (juce::var (obj.get()));
 }
 

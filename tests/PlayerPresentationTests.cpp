@@ -1,5 +1,6 @@
 #include <PlayerProcessor.h>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <thread>
 
 using samplemachine::PlayerProcessor;
@@ -83,5 +84,24 @@ TEST_CASE ("Player ignores retired experimental settings in older session state"
     juce::AudioProcessor::copyXmlToBinary (*xml, data);
     processor.setStateInformation (data.getData(), static_cast<int> (data.getSize()));
     CHECK (processor.getApvts().getParameter ("oversampling") == nullptr);
-    CHECK (processor.getApvts().getRawParameterValue ("gainDb")->load() == -12.0f);
+    CHECK (processor.getApvts().getRawParameterValue ("gainDb")->load() == Catch::Approx (-12.0f).margin (0.0001f));
+}
+
+TEST_CASE ("MPE legacy pressure value remains Off without changing Full automation", "[processor][state][mpe]")
+{
+    PlayerProcessor processor;
+    auto* parameter = processor.getApvts().getParameter ("mpeMode");
+    REQUIRE (parameter);
+    parameter->setValueNotifyingHost (parameter->convertTo0to1 (1.0f));
+    CHECK_FALSE (processor.getEngine().getMpeEnabled());
+    CHECK (processor.getEngine().getMpeMode() == samplemachine::MpeMode::None);
+    juce::MemoryBlock saved;
+    processor.getStateInformation (saved);
+    parameter->setValueNotifyingHost (1.0f);
+    CHECK (processor.getEngine().getMpeEnabled());
+    processor.setStateInformation (saved.getData(), static_cast<int> (saved.getSize()));
+    CHECK_FALSE (processor.getEngine().getMpeEnabled());
+    CHECK (processor.getApvts().getRawParameterValue ("mpeMode")->load() == Catch::Approx (1.0f));
+    parameter->setValueNotifyingHost (1.0f);
+    CHECK (processor.getEngine().getMpeMode() == samplemachine::MpeMode::Full);
 }

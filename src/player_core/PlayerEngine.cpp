@@ -84,9 +84,8 @@ void PlayerEngine::addParameters (juce::AudioProcessorValueTreeState::ParameterL
                                   MpeMode defaultMpeMode,
                                   int maxVoices)
 {
-    // Choice indices intentionally match the MpeMode enum integer values
-    // (None=0, Pressure=1, Full=2) so the conversion in parameterChanged
-    // is a static_cast rather than a string lookup.
+    // Keep the old 0..2 range for saved state and automation. Index 1 is
+    // a legacy Off value, not a separate engine mode.
     layout.add (
         std::make_unique<juce::AudioParameterFloat>  (juce::ParameterID { PlayerEngineParamIds::gainDb, 1 },
                                                       "Gain (dB)",
@@ -96,7 +95,7 @@ void PlayerEngine::addParameters (juce::AudioProcessorValueTreeState::ParameterL
                                                       "Polyphony", 1, maxVoices, 16),
         std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { PlayerEngineParamIds::mpeMode, 1 },
                                                       "MPE",
-                                                      juce::StringArray { "Off", "Pressure", "Full" },
+                                                      juce::StringArray { "Off", "Off (legacy)", "Full" },
                                                       static_cast<int> (defaultMpeMode)));
 }
 
@@ -295,6 +294,7 @@ void PlayerEngine::setNumVoices (int n)
 
 void PlayerEngine::setMpeMode (MpeMode mode, int perNoteBendRangeSemitones)
 {
+    mode = mode == MpeMode::Full ? MpeMode::Full : MpeMode::None;
     mpeMode = mode;
 #if SAMPLEMACHINE_SFIZZ_HAS_MPE
     synth->setMPEEnabled (mode == MpeMode::Full);

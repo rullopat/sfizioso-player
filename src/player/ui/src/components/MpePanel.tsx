@@ -35,18 +35,13 @@ export function MpePanel() {
     return onBackendEvent<MpeState>(EVT_MPE, (s) => setEff(s));
   }, []);
 
-  const modeOptions =
-    mode.choices.length > 0
-      ? mode.choices.map((label, i) => ({ label: label.toUpperCase(), value: i }))
-      : [
-          { label: "OFF", value: 0 },
-          { label: "PRES", value: 1 },
-          { label: "FULL", value: 2 },
-        ];
+  // Preserve the native 0..2 range, but never offer the legacy Off slot.
+  const modeOptions = [{ label: "OFF", value: 0 }, { label: "FULL", value: 2 }];
 
   return (
     <PanelSection title="MPE" className="mpe-panel">
-      <Segmented label="MODE" selected={mode.index} options={modeOptions} onSelect={mode.setIndex} />
+      <Segmented label="MODE" selected={mode.index === 2 ? 1 : 0} options={modeOptions}
+        onSelect={index => mode.setIndex(modeOptions[index].value)} />
       <Knob
         label="MASTER BEND"
         value={master.value}

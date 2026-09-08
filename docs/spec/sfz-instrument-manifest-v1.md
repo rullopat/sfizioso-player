@@ -1,6 +1,6 @@
 # SFZ Instrument Manifest v1 — initial Player implementation
 
-Status: draft, implemented for review in Sfizioso Player. Related:
+Status: v1 release candidate, implemented in Sfizioso Player 1.0.0-rc.1. Related:
 [rullopat/sfizioso-player#9](https://github.com/rullopat/sfizioso-player/issues/9).
 This is an optional Player convention, not an SFZ standard change.
 
@@ -110,7 +110,7 @@ Sample Machine exporter integration, a full legacy catalogue adapter/shared
 serializer, a public container inspector, optional `sm_pkg_manifest` discovery,
 SFZ `image_controls` fallback, a generic preset browser, and branded-rompler
 integration are separate follow-ups. No new engine opcode is needed to try
-this version. No release or consumer submodule update is part of this PR.
+this version. Consumer submodule updates remain separate from the Player release candidate.
 
 ## Validation
 
