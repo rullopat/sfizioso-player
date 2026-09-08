@@ -319,6 +319,13 @@ if(PROJECT_IS_TOP_LEVEL)
         target_compile_definitions(sfizioso_player_presentation_tests PRIVATE
             $<TARGET_PROPERTY:SfiziosoPlayer,COMPILE_DEFINITIONS>
             SFIZIOSO_MANIFEST_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/examples/manifest-instrument")
+        # Xcode 15's new linker fails with "invalid use of branch fixup"
+        # when this test links the application's LTO archive. Keep the workaround
+        # limited to the affected test/toolchain; plugin link settings are unchanged.
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+           AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+            target_link_options(sfizioso_player_presentation_tests PRIVATE -Wl,-ld_classic)
+        endif()
         catch_discover_tests(sfizioso_player_presentation_tests)
     endif()
 endif()
