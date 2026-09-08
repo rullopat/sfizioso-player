@@ -14,12 +14,16 @@ remains playable in players without manifest support.
 | --- | --- |
 | SFZ | Sound, modulation, MIDI CC defaults/current values, fallback labels |
 | `instrument.json` | Identity, preset catalogue, artwork, section/control order, widget hints |
-| Player | Layout, accessibility, CC dispatch, theme and asset loading |
+| Shared presentation libraries and UI kit | Snapshot construction, artwork validation, control layout and widgets |
+| Host product | Preset selection, asset source, CC dispatch, theme, shell and resource serving |
 
 The shared BSD-2-Clause `sfizioso_player::instrument_manifest` target uses JUCE
 Core and the existing bundle UTF-8 validator. The engine has no JSON or GUI
-code. The application builds a presentation snapshot on its instrument-load
-path while processing is suspended. `processBlock` never reads metadata/assets.
+code. The BSD-2-Clause `sfizioso_player::instrument_presentation` target adds artwork
+decoding through JUCE Graphics and bridge DTO construction, without linking the
+Player application or engine. The shared React renderer and configurable bridge
+hook live in `src/ui-shared/`. The host builds and publishes a presentation
+snapshot on its instrument-load path while processing is suspended. `processBlock` never reads metadata/assets.
 The bridge sends presentation separately from live `ccValues` events.
 
 ## Authoring contract

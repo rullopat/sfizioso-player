@@ -414,48 +414,19 @@ void PlayerEditor::handleGetRecent (const juce::Array<juce::var>&, Completion co
 
 void PlayerEditor::handleGetCcControls (const juce::Array<juce::var>&, Completion completion)
 {
-    ccControlNumbers.clear();
-    juce::Array<juce::var> out;
-    const auto generic = processor.getEngine().getCcControls();
-    auto add = [&] (int number, const juce::String& label, const juce::String& widget,
-                   const juce::String& section, const juce::String& sectionLabel)
-    {
-        ccControlNumbers.push_back (number);
-        juce::DynamicObject::Ptr o = new juce::DynamicObject();
-        o->setProperty ("number", number);
-        o->setProperty ("label", label.isNotEmpty() ? label : "CC " + juce::String (number));
-        o->setProperty ("value", static_cast<double> (processor.getEngine().getCcValue (number)));
-        o->setProperty ("widget", widget);
-        o->setProperty ("section", section);
-        o->setProperty ("sectionLabel", sectionLabel);
-        out.add (juce::var (o.get()));
-    };
+    std::vector<sfizioso_manifest::GenericControl> generic;
+    for (const auto& c : processor.getEngine().getCcControls())
+        generic.push_back ({ c.number, c.label, c.isSwitch });
     const auto presentation = processor.getInstrumentPresentation();
-    const auto* preset = presentation->preset();
-    if (preset && ! preset->sections.empty())
-    {
-        for (const auto& section : preset->sections)
-            for (const auto& c : section.controls)
-            {
-                auto label = c.label;
-                if (label.isEmpty())
-                    for (const auto& g : generic) if (g.number == c.cc) { label = g.label; break; }
-                add (c.cc, label, c.widget, section.id, section.label);
-            }
-    }
-    else
-        for (const auto& c : generic) add (c.number, c.label, c.isSwitch ? "toggle" : "knob", "", "");
-    juce::DynamicObject::Ptr snapshot = new juce::DynamicObject();
-    snapshot->setProperty ("controls", out);
-    snapshot->setProperty ("instrumentName", presentation->instrumentName);
-    snapshot->setProperty ("presetName", presentation->presetName);
-    snapshot->setProperty ("accent", preset ? preset->accent : juce::String());
-    snapshot->setProperty ("artworkUrl", presentation->artwork.isEmpty() ? juce::String()
-        : juce::WebBrowserComponent::getResourceProviderRoot() + presentation->artworkPath.substring (1));
-    juce::Array<juce::var> diagnostics;
-    for (const auto& diagnostic : presentation->metadata.diagnostics) diagnostics.add (diagnostic);
-    snapshot->setProperty ("diagnostics", diagnostics);
-    completion (juce::var (snapshot.get()));
+    auto snapshot = sfizioso_manifest::presentationToVar (*presentation, generic,
+        [&] (int number) { return processor.getEngine().getCcValue (number); },
+        juce::WebBrowserComponent::getResourceProviderRoot() + presentation->artworkPath.substring (1));
+    ccControlNumbers.clear();
+    const auto controlList = snapshot.getProperty ("controls", {});
+    if (auto* controls = controlList.getArray())
+        for (const auto& control : *controls)
+            ccControlNumbers.push_back (static_cast<int> (control.getProperty ("number", 0)));
+    completion (snapshot);
 }
 
 void PlayerEditor::handleSetCc (const juce::Array<juce::var>& args, Completion completion)

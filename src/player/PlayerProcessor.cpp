@@ -295,51 +295,21 @@ juce::String PlayerProcessor::getLoadedPatchName() const
 
 void PlayerProcessor::loadInstrumentPresentation (const juce::File& file)
 {
-    // Build a complete immutable load-time snapshot. UI reads retain ownership
-    // even if a host restores another instrument on a different thread.
-    // processBlock never accesses metadata or assets.
-    auto snapshot = std::make_shared<InstrumentPresentation>();
-    snapshot->artworkPath = "/instrument-artwork/" + juce::String (++artworkRevision);
-    snapshot->metadata = currentBundle ? currentBundle->getManifest() : sfizioso_manifest::loadBeside (file);
-    snapshot->selectedPresetPath = currentBundle ? currentBundle->getSfzEntryName() : file.getFileName();
     lastManifestModTime = file.getSiblingFile ("instrument.json").getLastModificationTime();
-    snapshot->instrumentName = currentBundle ? currentBundle->getInstrumentName() : juce::String();
-    snapshot->presetName = currentBundle ? currentBundle->getPatchName() : juce::String();
-    if (snapshot->metadata.manifest) snapshot->instrumentName = snapshot->metadata.manifest->name;
-    if (const auto* preset = snapshot->preset())
-    {
-        snapshot->presetName = preset->name;
-        if (preset->background.isNotEmpty())
-        {
-            if (currentBundle)
-            {
-                const auto bytes = currentBundle->readAsset (preset->background);
-                if (bytes.data) snapshot->artwork.append (bytes.data, bytes.size);
-            }
-            else
-                snapshot->artwork = sfizioso_manifest::readLocal (file.getParentDirectory(), preset->background,
-                                                                 sfizioso_manifest::maxAssetBytes);
-            snapshot->artworkMime = sfizioso_manifest::imageMime (snapshot->artwork.getData(), snapshot->artwork.getSize());
-            if (snapshot->artworkMime.isNotEmpty())
-            {
-                // Decode only after header limits, then serve a clean static PNG.
-                const auto image = juce::ImageFileFormat::loadFrom (snapshot->artwork.getData(), snapshot->artwork.getSize());
-                juce::MemoryOutputStream encoded;
-                if (image.isValid() && juce::PNGImageFormat().writeImageToStream (image, encoded))
-                {
-                    snapshot->artwork = encoded.getMemoryBlock();
-                    snapshot->artworkMime = "image/png";
-                }
-                else snapshot->artworkMime.clear();
-            }
-            if (snapshot->artworkMime.isEmpty())
-            {
-                snapshot->artwork.reset();
-                snapshot->metadata.diagnostics.add ("Artwork missing, unsupported, or exceeds image limits.");
-            }
-        }
-    }
-    std::atomic_store (&instrumentPresentation, std::shared_ptr<const InstrumentPresentation> (std::move (snapshot)));
+    auto snapshot = sfizioso_manifest::buildPresentation (
+        currentBundle ? currentBundle->getManifest() : sfizioso_manifest::loadBeside (file),
+        currentBundle ? currentBundle->getSfzEntryName() : file.getFileName(),
+        "/instrument-artwork/" + juce::String (++artworkRevision),
+        [&] (const juce::String& path) {
+            if (! currentBundle)
+                return sfizioso_manifest::readLocal (file.getParentDirectory(), path, sfizioso_manifest::maxAssetBytes);
+            const auto bytes = currentBundle->readAsset (path);
+            return bytes.data && bytes.size <= sfizioso_manifest::maxAssetBytes
+                ? juce::MemoryBlock (bytes.data, bytes.size) : juce::MemoryBlock();
+        },
+        currentBundle ? currentBundle->getInstrumentName() : juce::String(),
+        currentBundle ? currentBundle->getPatchName() : juce::String());
+    std::atomic_store (&instrumentPresentation, std::move (snapshot));
 }
 
 // --- SMPL-87 scala ---------------------------------------------------------

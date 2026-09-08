@@ -14,6 +14,7 @@ engine — an independent, MPE-capable fork of sfizz.
 |------|------|---------|
 | `src/player_core/` | sfizioso engine wrapper (APVTS params, MIDI dispatch, render) | BSD-2-Clause |
 | `src/instrument_manifest/` | bounded instrument metadata and asset helpers | BSD-2-Clause |
+| `src/instrument_presentation/` | immutable presentation snapshots, safe artwork decoding and bridge DTOs | BSD-2-Clause |
 | `src/core_prefs/`  | global user preference store (theme persistence) | BSD-2-Clause |
 | `src/sfzbundle/`   | dependency-free `.sfzbundle` format and validated parser | BSD-2-Clause |
 | `src/ui-shared/`   | React UI kit + C++/JS bridge (`juceBridge`, `useParam`, knobs, meters, design tokens) | BSD-2-Clause |
@@ -344,6 +345,49 @@ user plugin folder by default.
 A parent CMake project can `add_subdirectory()` this repo to reuse the
 libraries without building the application: when not the top-level project, the
 JUCE / sfizioso submodules and the `SfiziosoPlayer` app target are skipped, and
-only the `player_core`, `core_prefs`, `sfizioso_bundle`, and `instrument_manifest`
+only the `player_core`, `core_prefs`, `sfizioso_bundle`, and `instrument_manifest`, and `instrument_presentation`
 libraries, the `add_webview_ui()` helper, and the
 `SFIZIOSO_UI_SHARED` path are exposed. The parent supplies JUCE + sfizioso.
+
+
+### Reusing instrument presentation
+
+The manifest feature is shared end to end. Consumers do not need to compile or
+copy `src/player/`:
+
+```cmake
+target_link_libraries(MyInstrument PRIVATE sfizioso_player::instrument_presentation)
+```
+
+- `instrument_manifest/Manifest.h` parses metadata and discovers loose sidecars.
+- `instrument_presentation/Presentation.h` builds an immutable snapshot from a
+  parsed manifest, selected preset path, and synchronous asset-reader callback.
+  The callback can read a loose package or decrypt a private bundle; it must
+  limit returned source bytes to `maxAssetBytes`. The shared library validates
+  image limits, decodes artwork and re-encodes it as PNG. Call it on the
+  instrument-load path, never from the audio callback. Publish the returned
+  `shared_ptr<const Presentation>` atomically when threads share it.
+- `presentationToVar()` combines the snapshot with host-supplied generic CC
+  labels, a current-value callback and an artwork resource URL. The host serves
+  the snapshot's PNG bytes and dispatches CC changes to its engine.
+- `@shared/components/InstrumentControls` renders the resulting `Presentation`
+  using `presentation`, `values`, and `setCc` props. It imports its own styles
+  and has no Player shell dependency. Values and callbacks use normalised 0–1
+  CC values. Import types from `@shared/instrument/types`.
+- `@shared/hooks/useInstrumentControls` optionally connects the renderer to the
+  shared JUCE bridge. Supply the native function names (`getPresentation`,
+  `setCc`) and event names (`ccValues`, `instrumentLoaded`). A different transport
+  can pass props directly to the renderer.
+
+Map `@shared` to `${SFIZIOSO_UI_SHARED}`, as the Player UI does, and
+alias `juce-framework-frontend` to the JUCE WebView frontend when using the hook. The renderer
+uses the UI kit's theme variables (`--accent`, `--text-1`, `--text-2`, `--text-3`);
+consumers own the surrounding layout, theme, preset selection and resource URL
+lifetime. Keep asset readers and value callbacks valid for the synchronous call.
+
+These components are covered by [BSD-2-Clause](LICENSE-BSD-2-Clause.txt), with
+explicit SPDX identifiers on the extracted presentation sources. Preserve the
+copyright notice and licence conditions. JUCE and other dependencies retain
+their own licences; extracting this feature does not change those terms.
+Sample Machine and branded products still need consumer integration and a pin
+update after this draft is ready.

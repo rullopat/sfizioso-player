@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PlayerEngine.h"
-#include <instrument_manifest/Manifest.h>
+#include <instrument_presentation/Presentation.h>
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -32,19 +32,7 @@ public:
     juce::String getLoadedInstrumentName() const;
     juce::String getLoadedPatchName() const;
 
-    struct InstrumentPresentation
-    {
-        sfizioso_manifest::Result metadata;
-        juce::String selectedPresetPath, instrumentName, presetName, artworkMime, artworkPath;
-        juce::MemoryBlock artwork;
-        const sfizioso_manifest::Preset* preset() const
-        {
-            if (metadata.manifest)
-                for (const auto& p : metadata.manifest->presets)
-                    if (p.sfz == selectedPresetPath) return &p;
-            return nullptr;
-        }
-    };
+    using InstrumentPresentation = sfizioso_manifest::Presentation;
     std::shared_ptr<const InstrumentPresentation> getInstrumentPresentation() const
     { return std::atomic_load (&instrumentPresentation); }
 
