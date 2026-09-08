@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PlayerEngine.h"
+#include <instrument_manifest/Manifest.h>
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -30,6 +31,22 @@ public:
     juce::File getCurrentSfzFile() const;
     juce::String getLoadedInstrumentName() const;
     juce::String getLoadedPatchName() const;
+
+    struct InstrumentPresentation
+    {
+        sfizioso_manifest::Result metadata;
+        juce::String selectedPresetPath, instrumentName, presetName, artworkMime, artworkPath;
+        juce::MemoryBlock artwork;
+        const sfizioso_manifest::Preset* preset() const
+        {
+            if (metadata.manifest)
+                for (const auto& p : metadata.manifest->presets)
+                    if (p.sfz == selectedPresetPath) return &p;
+            return nullptr;
+        }
+    };
+    std::shared_ptr<const InstrumentPresentation> getInstrumentPresentation() const
+    { return std::atomic_load (&instrumentPresentation); }
 
     int getNumRegions() const            { return engine.getNumRegions(); }
     int getNumPreloadedSamples() const   { return engine.getNumPreloadedSamples(); }
@@ -101,6 +118,11 @@ private:
     void applyMpeSettings();    // SMPL-90 — push the full MPE state from APVTS
     void appendRecentFile (const juce::File& file);
     bool loadSfzOrBundleFile (const juce::File& file);
+
+    void loadInstrumentPresentation (const juce::File& file);
+    std::shared_ptr<const InstrumentPresentation> instrumentPresentation = std::make_shared<InstrumentPresentation>();
+    std::atomic<juce::uint64> artworkRevision { 0 };
+    juce::Time lastManifestModTime;
 
     PlayerEngine engine;
     juce::AudioProcessorValueTreeState apvts;

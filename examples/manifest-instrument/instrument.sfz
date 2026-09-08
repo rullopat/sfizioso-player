@@ -1,0 +1,21 @@
+// Built-in oscillator demo: no external samples required.
+<control>
+label_cc74=Brightness
+label_cc7=Volume
+label_cc1=Vibrato
+label_cc64=Sustain
+set_cc74=80
+set_cc7=100
+set_cc1=0
+set_cc64=0
+<region>
+sample=*saw
+volume=-18
+ampeg_attack=0.02
+ampeg_release=0.5
+fil_type=lpf_2p
+cutoff=200
+cutoff_oncc74=8000
+amplitude_oncc7=100
+pitchlfo_freq=5
+pitchlfo_depth_oncc1=30

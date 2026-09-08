@@ -84,7 +84,7 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             .withNativeFunction ("getStatus",     [this] (auto& a, auto c) { handleGetStatus     (a, std::move (c)); })
             .withNativeFunction ("getAppInfo",    [this] (auto& a, auto c) { handleGetAppInfo    (a, std::move (c)); })
             .withNativeFunction ("getRecentFiles",[this] (auto& a, auto c) { handleGetRecent     (a, std::move (c)); })
-            .withNativeFunction ("getCcControls", [this] (auto& a, auto c) { handleGetCcControls (a, std::move (c)); })
+            .withNativeFunction ("getInstrumentPresentation", [this] (auto& a, auto c) { handleGetCcControls (a, std::move (c)); })
             .withNativeFunction ("setCc",         [this] (auto& a, auto c) { handleSetCc         (a, std::move (c)); })
             .withNativeFunction ("getKeyLabels",  [this] (auto& a, auto c) { handleGetKeyLabels  (a, std::move (c)); })
             .withNativeFunction ("noteOn",        [this] (auto& a, auto c) { handleNoteOn        (a, std::move (c)); })
@@ -202,6 +202,14 @@ PlayerEditor::ResourceResult PlayerEditor::getResource (const juce::String& url)
     juce::String path = url.startsWithChar ('/') ? url.substring (1) : url;
     if (path.isEmpty())
         path = "index.html";
+
+    const auto presentation = processor.getInstrumentPresentation();
+    if (url == presentation->artworkPath && ! presentation->artwork.isEmpty())
+    {
+        const auto& block = presentation->artwork;
+        const auto* bytes = static_cast<const std::byte*> (block.getData());
+        return juce::WebBrowserComponent::Resource { { bytes, bytes + block.getSize() }, presentation->artworkMime };
+    }
 
     if (uiZip == nullptr)
         return std::nullopt;
@@ -408,18 +416,46 @@ void PlayerEditor::handleGetCcControls (const juce::Array<juce::var>&, Completio
 {
     ccControlNumbers.clear();
     juce::Array<juce::var> out;
-    for (const auto& c : processor.getEngine().getCcControls())
+    const auto generic = processor.getEngine().getCcControls();
+    auto add = [&] (int number, const juce::String& label, const juce::String& widget,
+                   const juce::String& section, const juce::String& sectionLabel)
     {
-        ccControlNumbers.push_back (c.number);
+        ccControlNumbers.push_back (number);
         juce::DynamicObject::Ptr o = new juce::DynamicObject();
-        o->setProperty ("number",       c.number);
-        o->setProperty ("label",        c.label);
-        o->setProperty ("value",        static_cast<double> (processor.getEngine().getCcValue (c.number)));
-        o->setProperty ("defaultValue", static_cast<double> (c.defaultValue));
-        o->setProperty ("isSwitch",     c.isSwitch);
+        o->setProperty ("number", number);
+        o->setProperty ("label", label.isNotEmpty() ? label : "CC " + juce::String (number));
+        o->setProperty ("value", static_cast<double> (processor.getEngine().getCcValue (number)));
+        o->setProperty ("widget", widget);
+        o->setProperty ("section", section);
+        o->setProperty ("sectionLabel", sectionLabel);
         out.add (juce::var (o.get()));
+    };
+    const auto presentation = processor.getInstrumentPresentation();
+    const auto* preset = presentation->preset();
+    if (preset && ! preset->sections.empty())
+    {
+        for (const auto& section : preset->sections)
+            for (const auto& c : section.controls)
+            {
+                auto label = c.label;
+                if (label.isEmpty())
+                    for (const auto& g : generic) if (g.number == c.cc) { label = g.label; break; }
+                add (c.cc, label, c.widget, section.id, section.label);
+            }
     }
-    completion (juce::var (out));
+    else
+        for (const auto& c : generic) add (c.number, c.label, c.isSwitch ? "toggle" : "knob", "", "");
+    juce::DynamicObject::Ptr snapshot = new juce::DynamicObject();
+    snapshot->setProperty ("controls", out);
+    snapshot->setProperty ("instrumentName", presentation->instrumentName);
+    snapshot->setProperty ("presetName", presentation->presetName);
+    snapshot->setProperty ("accent", preset ? preset->accent : juce::String());
+    snapshot->setProperty ("artworkUrl", presentation->artwork.isEmpty() ? juce::String()
+        : juce::WebBrowserComponent::getResourceProviderRoot() + presentation->artworkPath.substring (1));
+    juce::Array<juce::var> diagnostics;
+    for (const auto& diagnostic : presentation->metadata.diagnostics) diagnostics.add (diagnostic);
+    snapshot->setProperty ("diagnostics", diagnostics);
+    completion (juce::var (snapshot.get()));
 }
 
 void PlayerEditor::handleSetCc (const juce::Array<juce::var>& args, Completion completion)

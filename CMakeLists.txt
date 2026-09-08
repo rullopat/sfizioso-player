@@ -116,6 +116,13 @@ target_include_directories(sfizioso_bundle PUBLIC src)
 target_compile_features(sfizioso_bundle PUBLIC cxx_std_17)
 set_target_properties(sfizioso_bundle PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
+# Shared, load-time instrument metadata. No engine or UI dependency.
+add_library(instrument_manifest STATIC src/instrument_manifest/Manifest.cpp)
+add_library(sfizioso_player::instrument_manifest ALIAS instrument_manifest)
+target_include_directories(instrument_manifest PUBLIC src)
+target_link_libraries(instrument_manifest PUBLIC juce::juce_core PRIVATE sfizioso_player::sfzbundle)
+target_compile_definitions(instrument_manifest PRIVATE JUCE_USE_CURL=0)
+
 # ---------------------------------------------------------------------------
 # core_prefs — global user preference store (theme persistence). BSD-2-Clause.
 # Consumed by the Sfizioso Player and by the private branded romplers.
@@ -174,6 +181,7 @@ if(SFIZIOSO_PLAYER_TESTS)
         tests/PlayerEngineChannelRoutingTests.cpp
         tests/PlayerEngineProgramChangeTests.cpp
         tests/PortableBundleTests.cpp
+        tests/InstrumentManifestTests.cpp
         tests/SfzBundleParserTests.cpp
         src/player/PortableBundle.cpp)
     target_include_directories(sfizioso_player_tests PRIVATE src/player)
@@ -181,6 +189,7 @@ if(SFIZIOSO_PLAYER_TESTS)
         PRIVATE
             player_core
             sfizioso_player::sfzbundle
+            sfizioso_player::instrument_manifest
             sfizioso::sfizioso
             juce::juce_core
             Catch2::Catch2WithMain)
@@ -279,6 +288,7 @@ if(PROJECT_IS_TOP_LEVEL)
             juce::juce_audio_utils
             player_core
             sfizioso_player::sfzbundle
+            sfizioso_player::instrument_manifest
             sfizioso::sfizioso
             core_prefs            # SMPL-89 recent-files persistence
         PUBLIC
@@ -297,4 +307,17 @@ if(PROJECT_IS_TOP_LEVEL)
                     ${SFIZIOSO_UI_SHARED}/*.css)
     target_link_libraries(SfiziosoPlayer PRIVATE SfiziosoPlayerUiData)
     target_compile_definitions(SfiziosoPlayer PUBLIC JUCE_WEB_BROWSER=1)
+    if(SFIZIOSO_PLAYER_TESTS)
+        # Reuse the compiled application, including its WebView backend. Do not
+        # compile JUCE's INTERFACE_SOURCES again in the test executable.
+        add_executable(sfizioso_player_presentation_tests tests/PlayerPresentationTests.cpp)
+        target_link_libraries(sfizioso_player_presentation_tests PRIVATE
+            $<LINK_ONLY:SfiziosoPlayer> Catch2::Catch2WithMain)
+        target_include_directories(sfizioso_player_presentation_tests PRIVATE
+            $<TARGET_PROPERTY:SfiziosoPlayer,INCLUDE_DIRECTORIES>)
+        target_compile_definitions(sfizioso_player_presentation_tests PRIVATE
+            $<TARGET_PROPERTY:SfiziosoPlayer,COMPILE_DEFINITIONS>
+            SFIZIOSO_MANIFEST_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/examples/manifest-instrument")
+        catch_discover_tests(sfizioso_player_presentation_tests)
+    endif()
 endif()

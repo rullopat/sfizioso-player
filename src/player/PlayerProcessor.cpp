@@ -264,6 +264,7 @@ bool PlayerProcessor::loadSfzOrBundleFile (const juce::File& file)
         }
 
         currentBundle = std::move (bundle);
+        loadInstrumentPresentation (file);
         return true;
     }
 
@@ -272,6 +273,7 @@ bool PlayerProcessor::loadSfzOrBundleFile (const juce::File& file)
         return false;
 
     currentBundle.reset();
+    loadInstrumentPresentation (file);
     return true;
 }
 
@@ -283,12 +285,61 @@ juce::File PlayerProcessor::getCurrentSfzFile() const
 
 juce::String PlayerProcessor::getLoadedInstrumentName() const
 {
-    return currentBundle != nullptr ? currentBundle->getInstrumentName() : juce::String();
+    return getInstrumentPresentation()->instrumentName;
 }
 
 juce::String PlayerProcessor::getLoadedPatchName() const
 {
-    return currentBundle != nullptr ? currentBundle->getPatchName() : juce::String();
+    return getInstrumentPresentation()->presetName;
+}
+
+void PlayerProcessor::loadInstrumentPresentation (const juce::File& file)
+{
+    // Build a complete immutable load-time snapshot. UI reads retain ownership
+    // even if a host restores another instrument on a different thread.
+    // processBlock never accesses metadata or assets.
+    auto snapshot = std::make_shared<InstrumentPresentation>();
+    snapshot->artworkPath = "/instrument-artwork/" + juce::String (++artworkRevision);
+    snapshot->metadata = currentBundle ? currentBundle->getManifest() : sfizioso_manifest::loadBeside (file);
+    snapshot->selectedPresetPath = currentBundle ? currentBundle->getSfzEntryName() : file.getFileName();
+    lastManifestModTime = file.getSiblingFile ("instrument.json").getLastModificationTime();
+    snapshot->instrumentName = currentBundle ? currentBundle->getInstrumentName() : juce::String();
+    snapshot->presetName = currentBundle ? currentBundle->getPatchName() : juce::String();
+    if (snapshot->metadata.manifest) snapshot->instrumentName = snapshot->metadata.manifest->name;
+    if (const auto* preset = snapshot->preset())
+    {
+        snapshot->presetName = preset->name;
+        if (preset->background.isNotEmpty())
+        {
+            if (currentBundle)
+            {
+                const auto bytes = currentBundle->readAsset (preset->background);
+                if (bytes.data) snapshot->artwork.append (bytes.data, bytes.size);
+            }
+            else
+                snapshot->artwork = sfizioso_manifest::readLocal (file.getParentDirectory(), preset->background,
+                                                                 sfizioso_manifest::maxAssetBytes);
+            snapshot->artworkMime = sfizioso_manifest::imageMime (snapshot->artwork.getData(), snapshot->artwork.getSize());
+            if (snapshot->artworkMime.isNotEmpty())
+            {
+                // Decode only after header limits, then serve a clean static PNG.
+                const auto image = juce::ImageFileFormat::loadFrom (snapshot->artwork.getData(), snapshot->artwork.getSize());
+                juce::MemoryOutputStream encoded;
+                if (image.isValid() && juce::PNGImageFormat().writeImageToStream (image, encoded))
+                {
+                    snapshot->artwork = encoded.getMemoryBlock();
+                    snapshot->artworkMime = "image/png";
+                }
+                else snapshot->artworkMime.clear();
+            }
+            if (snapshot->artworkMime.isEmpty())
+            {
+                snapshot->artwork.reset();
+                snapshot->metadata.diagnostics.add ("Artwork missing, unsupported, or exceeds image limits.");
+            }
+        }
+    }
+    std::atomic_store (&instrumentPresentation, std::shared_ptr<const InstrumentPresentation> (std::move (snapshot)));
 }
 
 // --- SMPL-87 scala ---------------------------------------------------------
@@ -356,7 +407,8 @@ bool PlayerProcessor::checkForFileReload()
 
     bool changed = engine.shouldReloadFile(); // tracks changed includes
     const auto mod = file.getLastModificationTime();
-    if (mod != lastSfzModTime)
+    if (mod != lastSfzModTime || (! currentBundle
+        && file.getSiblingFile ("instrument.json").getLastModificationTime() != lastManifestModTime))
         changed = true;
     if (! changed)
         return false;

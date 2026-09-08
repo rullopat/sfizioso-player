@@ -13,6 +13,7 @@ engine — an independent, MPE-capable fork of sfizz.
 | Path | What | License |
 |------|------|---------|
 | `src/player_core/` | sfizioso engine wrapper (APVTS params, MIDI dispatch, render) | BSD-2-Clause |
+| `src/instrument_manifest/` | bounded instrument metadata and asset helpers | BSD-2-Clause |
 | `src/core_prefs/`  | global user preference store (theme persistence) | BSD-2-Clause |
 | `src/sfzbundle/`   | dependency-free `.sfzbundle` format and validated parser | BSD-2-Clause |
 | `src/ui-shared/`   | React UI kit + C++/JS bridge (`juceBridge`, `useParam`, knobs, meters, design tokens) | BSD-2-Clause |
@@ -21,6 +22,19 @@ engine — an independent, MPE-capable fork of sfizz.
 The shared libraries are permissive so they can also be consumed by other
 projects (including closed-source ones); the application itself is AGPLv3.
 See [LICENSE](LICENSE).
+
+## Instrument presentation (v1 draft)
+
+An optional `instrument.json` beside an SFZ, or in a portable `.sfzbundle`,
+provides instrument/preset names, grouped MIDI CC controls, knob/slider/toggle
+hints, an accent colour, and a PNG/JPEG controls background. The Player owns
+responsive layout; SFZ continues to define sound and controller defaults.
+Missing or invalid presentation falls back to the generic controls.
+
+See the [v1 contract](docs/spec/sfz-instrument-manifest-v1.md) and
+[playable example](examples/manifest-instrument/README.md). This is an initial
+Player implementation of [sfizioso#2](https://github.com/rullopat/sfizioso/issues/2),
+not a released cross-player standard.
 
 ## Fixed-channel SFZ routing
 
@@ -81,5 +95,6 @@ user plugin folder by default.
 A parent CMake project can `add_subdirectory()` this repo to reuse the
 libraries without building the application: when not the top-level project, the
 JUCE / sfizioso submodules and the `SfiziosoPlayer` app target are skipped, and
-only `player_core`, `core_prefs`, the `add_webview_ui()` helper, and the
+only the `player_core`, `core_prefs`, `sfizioso_bundle`, and `instrument_manifest`
+libraries, the `add_webview_ui()` helper, and the
 `SFIZIOSO_UI_SHARED` path are exposed. The parent supplies JUCE + sfizioso.

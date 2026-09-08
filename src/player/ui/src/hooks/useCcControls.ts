@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { callNative, onBackendEvent } from "@shared/juceBridge";
 import {
-  FN_GET_CC_CONTROLS,
   FN_SET_CC,
+  FN_GET_INSTRUMENT_PRESENTATION,
   EVT_CC_VALUES,
   EVT_SFZ_LOADED,
 } from "../paramIds";
@@ -12,8 +12,18 @@ export interface CcControl {
   number: number;
   label: string;
   value: number;        // normalised 0..1
-  defaultValue: number; // normalised 0..1
-  isSwitch: boolean;
+  widget: "knob" | "slider" | "toggle";
+  section: string;
+  sectionLabel: string;
+}
+
+interface Presentation {
+  controls: CcControl[];
+  instrumentName: string;
+  presetName: string;
+  accent: string;
+  artworkUrl: string;
+  diagnostics: string[];
 }
 
 /**
@@ -22,13 +32,19 @@ export interface CcControl {
  * rebuilds whenever an SFZ (re)loads.
  */
 export function useCcControls() {
-  const [controls, setControls] = useState<CcControl[]>([]);
+  const [presentation, setPresentation] = useState<Presentation>({
+    controls: [], instrumentName: "", presetName: "", accent: "", artworkUrl: "", diagnostics: [],
+  });
+  const generation = useRef(0);
+  const controls = presentation.controls;
   const [values, setValues] = useState<Record<number, number>>({});
 
   const refresh = useCallback(async () => {
-    const list = await callNative<CcControl[]>(FN_GET_CC_CONTROLS);
-    if (list) {
-      setControls(list);
+    const request = ++generation.current;
+    const snapshot = await callNative<Presentation>(FN_GET_INSTRUMENT_PRESENTATION);
+    if (snapshot && request === generation.current) {
+      const list = snapshot.controls;
+      setPresentation(snapshot);
       const init: Record<number, number> = {};
       for (const c of list) init[c.number] = c.value;
       setValues(init);
@@ -48,6 +64,7 @@ export function useCcControls() {
       refresh();
     });
     return () => {
+      ++generation.current;
       offVals();
       offLoaded();
     };
@@ -58,5 +75,5 @@ export function useCcControls() {
     callNative(FN_SET_CC, number, value);
   }, []);
 
-  return { controls, values, setCc };
+  return { controls, values, setCc, presentation };
 }

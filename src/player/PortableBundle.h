@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
+#include <instrument_manifest/Manifest.h>
 
 #include <cstddef>
 #include <memory>
@@ -37,6 +38,9 @@ public:
         std::size_t size = 0;
     };
 
+    const sfizioso_manifest::Result& getManifest() const { return manifest; }
+    const juce::String& getSfzEntryName() const { return sfzEntryName; }
+    SampleBytes readAsset (const juce::String& path) const;
     SampleBytes readSampleBytes (const std::string& path) const;
 
 private:
@@ -46,7 +50,9 @@ private:
     juce::String errorMessage;
     juce::File sourceFile;
     std::vector<std::uint8_t> bundleBytes;
-    juce::String sfzText;
+    juce::String sfzText, sfzEntryName;
+    sfizioso_manifest::Result manifest;
+    std::unordered_map<std::string, SampleBytes> assets;
     juce::String instrumentName;
     juce::String patchName;
     std::unordered_map<std::string, SampleBytes> samples;

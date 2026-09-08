@@ -71,6 +71,9 @@ bool PortableBundle::loadFromFile (const juce::File& file)
     errorMessage.clear();
     sourceFile = file;
     samples.clear();
+    assets.clear();
+    manifest = {};
+    sfzEntryName.clear();
     bundleBytes.clear();
     sfzText.clear();
     instrumentName.clear();
@@ -103,12 +106,14 @@ bool PortableBundle::loadFromFile (const juce::File& file)
 
 juce::String PortableBundle::getVirtualPath() const
 {
-    return "/__sfizioso_bundle__/" + sourceFile.getFileNameWithoutExtension() + ".sfz";
+    return "/__sfizioso_bundle__/" + sfzEntryName;
 }
 
 PortableBundle::SampleBytes PortableBundle::readSampleBytes (const std::string& path) const
 {
-    const auto key = normaliseKey (path);
+    auto key = normaliseKey (path);
+    const std::string prefix = "/__sfizioso_bundle__/";
+    if (key.compare (0, prefix.size(), prefix) == 0) key.erase (0, prefix.size());
     auto it = samples.find (key);
     if (it != samples.end())
         return it->second;
@@ -151,75 +156,99 @@ bool PortableBundle::parseBytes (const std::uint8_t* bytes, std::size_t size)
     // Build a complete temporary view first. A semantic failure must not expose
     // pointers from an otherwise-invalid bundle through readSampleBytes.
     std::unordered_map<std::string, SampleBytes> parsedSamples;
-    juce::String parsedSfzText;
-    juce::String metadataJson;
-    bool hasMetadata = false;
-
-    for (std::size_t i = 0; i < bundle.entries().size(); ++i)
+    std::vector<const sfzbundle::EntryView*> sfzs;
+    const sfzbundle::EntryView* canonical = nullptr;
+    const sfzbundle::EntryView* legacy = nullptr;
+    bool duplicateManifest = false;
+    for (const auto& entry : bundle.entries())
     {
-        const auto& entry = bundle.entries()[i];
         if (entry.type == sfzbundle::BundleEntryType::SampleWav
             || entry.type == sfzbundle::BundleEntryType::SampleFlac)
         {
             const auto key = normaliseKey (std::string (entry.name));
-            if (key.empty())
-            {
-                errorMessage = "Bundle sample entry has an empty name at index " + juce::String (i);
-                return false;
-            }
-
+            if (key.empty()) { errorMessage = "Bundle sample entry has an empty name"; return false; }
             const SampleBytes sample { entry.payload.data, entry.payload.size };
             parsedSamples[key] = sample;
             parsedSamples[basenameKey (key)] = sample;
         }
+        else if (entry.type == sfzbundle::BundleEntryType::SfzText)
+            sfzs.push_back (&entry);
         else if (entry.type == sfzbundle::BundleEntryType::MetadataJson)
         {
-            hasMetadata = true;
-            if (! readUtf8 (entry.payload, metadataJson))
+            if (entry.name == "instrument.json")
             {
-                errorMessage = "Bundle metadata is not valid UTF-8";
-                return false;
+                duplicateManifest = canonical != nullptr;
+                canonical = &entry;
+            }
+            else if (entry.name == "presets.json") legacy = &entry;
+        }
+        else if (entry.type == sfzbundle::BundleEntryType::Asset)
+        {
+            const auto name = juce::String::fromUTF8 (entry.name.data(), static_cast<int> (entry.name.size()));
+            if (sfizioso_manifest::isPackagePath (name) && entry.payload.size <= sfizioso_manifest::maxAssetBytes)
+            {
+                const auto inserted = assets.emplace (std::string (entry.name), SampleBytes { entry.payload.data, entry.payload.size });
+                if (! inserted.second) inserted.first->second = {}; // ambiguous asset names are unusable
             }
         }
-        else if (entry.type == sfzbundle::BundleEntryType::SfzText
-                 && parsedSfzText.isEmpty())
+    }
+    if (sfzs.empty()) { errorMessage = "Bundle contains no SFZ preset"; return false; }
+    auto* selected = sfzs.front();
+    if (canonical && ! duplicateManifest)
+        manifest = sfizioso_manifest::parse (canonical->payload.data, canonical->payload.size);
+    else if (duplicateManifest)
+        manifest.diagnostics.add ("Ignored duplicate instrument.json entries.");
+    if (manifest.manifest)
+    {
+        // Resolve every catalogue entry exactly. Metadata failure never prevents
+        // loading the original first SFZ entry.
+        for (const auto& preset : manifest.manifest->presets)
         {
-            if (! readUtf8 (entry.payload, parsedSfzText))
+            int count = 0;
+            for (const auto* entry : sfzs)
+                if (entry->name == preset.sfz.toStdString()) ++count;
+            if (count != 1)
             {
-                errorMessage = "Bundle SFZ preset is not valid UTF-8";
-                return false;
+                manifest.manifest.reset();
+                manifest.diagnostics.add ("Manifest names a missing or ambiguous SFZ entry.");
+                break;
             }
         }
     }
-
-    if (parsedSfzText.isEmpty())
+    juce::String parsedInstrumentName, parsedPatchName;
+    if (manifest.manifest)
     {
-        errorMessage = "Bundle contains no SFZ preset";
-        return false;
+        const auto& preset = manifest.manifest->presets.front();
+        for (const auto* entry : sfzs)
+            if (entry->name == preset.sfz.toStdString()) selected = entry;
+        parsedInstrumentName = manifest.manifest->name;
+        parsedPatchName = preset.name;
     }
-
-    juce::String parsedInstrumentName;
-    juce::String parsedPatchName;
-    if (hasMetadata)
+    else if (legacy && legacy->payload.size <= sfizioso_manifest::maxJsonBytes)
     {
-        juce::var parsedMetadata;
-        const auto result = juce::JSON::parse (metadataJson, parsedMetadata);
-        auto* obj = parsedMetadata.getDynamicObject();
-        if (result.failed() || obj == nullptr)
-        {
-            errorMessage = "Bundle metadata is not a valid JSON object";
-            return false;
-        }
-
-        parsedInstrumentName = obj->getProperty ("instrumentName").toString();
-        parsedPatchName = obj->getProperty ("patchName").toString();
+        // Legacy metadata is optional as well. Bound nesting before JUCE JSON
+        // parsing through the shared parser's preflight (legacy adaptation below).
+        const auto adapted = sfizioso_manifest::parseLegacy (legacy->payload.data, legacy->payload.size);
+        parsedInstrumentName = adapted.first;
+        parsedPatchName = adapted.second;
     }
-
+    juce::String parsedSfzText;
+    if (! readUtf8 (selected->payload, parsedSfzText))
+    { errorMessage = "Bundle SFZ preset is not valid UTF-8"; return false; }
+    if (parsedSfzText.isEmpty()) { errorMessage = "Bundle contains no SFZ preset"; return false; }
+    sfzEntryName = juce::String::fromUTF8 (selected->name.data(), static_cast<int> (selected->name.size()));
     samples = std::move (parsedSamples);
     sfzText = std::move (parsedSfzText);
     instrumentName = std::move (parsedInstrumentName);
     patchName = std::move (parsedPatchName);
     return true;
+}
+
+PortableBundle::SampleBytes PortableBundle::readAsset (const juce::String& path) const
+{
+    if (! valid || ! sfizioso_manifest::isPackagePath (path)) return {};
+    const auto it = assets.find (path.toStdString());
+    return it == assets.end() ? SampleBytes{} : it->second;
 }
 
 } // namespace samplemachine

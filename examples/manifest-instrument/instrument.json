@@ -1,0 +1,66 @@
+{
+  "format": "sfizioso.instrument-manifest",
+  "formatVersion": 1,
+  "instrument": {
+    "id": "org.sfizioso.manifest-demo",
+    "name": "Evening Signals",
+    "author": "Sfizioso",
+    "version": "1.0.0"
+  },
+  "presets": [
+    {
+      "id": "soft-signal",
+      "name": "Soft Signal",
+      "sfz": "instrument.sfz",
+      "artwork": {
+        "controlsBackground": "artwork/background.png"
+      },
+      "presentation": {
+        "accent": "#e7a86d",
+        "sections": [
+          {
+            "id": "tone",
+            "label": "Tone",
+            "controls": [
+              {
+                "target": {
+                  "type": "cc",
+                  "number": 74
+                },
+                "widget": "knob"
+              },
+              {
+                "target": {
+                  "type": "cc",
+                  "number": 7
+                },
+                "widget": "slider"
+              }
+            ]
+          },
+          {
+            "id": "expression",
+            "label": "Expression",
+            "controls": [
+              {
+                "target": {
+                  "type": "cc",
+                  "number": 1
+                },
+                "label": "Vibrato",
+                "widget": "knob"
+              },
+              {
+                "target": {
+                  "type": "cc",
+                  "number": 64
+                },
+                "widget": "toggle"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
