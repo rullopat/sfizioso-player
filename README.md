@@ -314,6 +314,9 @@ whole zone and global view, while Program Change on Member Channels is ignored.
 
 ## Build
 
+The build pins JUCE **9.0.2**. Its WebView frontend is bundled from the same
+submodule under `native/typescript/webview-interop/dist/index.js`.
+
 ```sh
 git submodule update --init --recursive          # JUCE + sfizioso (and its nested deps)
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -330,7 +333,7 @@ the native JUCE and WebKit dependencies with:
 ```sh
 sudo apt install ninja-build libasound2-dev libfreetype-dev libfontconfig1-dev \
   libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
-  libxrandr-dev libxrender-dev libwebkit2gtk-4.1-dev libglu1-mesa-dev \
+  libxrandr-dev libxrender-dev libxi-dev libegl-dev libwebkit2gtk-4.1-dev libglu1-mesa-dev \
   mesa-common-dev
 ```
 

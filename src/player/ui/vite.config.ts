@@ -6,12 +6,11 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// JUCE 8 ships its WebView frontend JS as plain ES modules under its module
-// tree. We import it via this alias instead of duplicating the file — keeps
-// us in sync with whatever JUCE submodule SHA the repo is pinned to.
+// Use JUCE 9's shipped WebView frontend bundle from the pinned submodule.
+// This keeps the JavaScript/native protocol versions together.
 const juceFrontend = path.resolve(
   here,
-  "../../../external/JUCE/modules/juce_gui_extra/native/javascript/index.js"
+  "../../../external/JUCE/modules/juce_gui_extra/native/typescript/webview-interop/dist/index.js"
 );
 
 // Shared design-system components live one level up at src/ui-shared/.

@@ -1,11 +1,11 @@
 // Bridge between the React UI and the JUCE backend.
-// Wraps the official JUCE 8 WebView frontend (`juce-framework-frontend`)
+// Wraps the official JUCE WebView frontend (`juce-framework-frontend`)
 // in a small typed API the rest of the app consumes.
 //
 // The `juce-framework-frontend` import is resolved by each consumer's
 // vite.config.ts alias (the JUCE submodule path varies per target).
 
-// @ts-expect-error — JUCE frontend ships as plain JS; aliased via consumer vite.config.ts.
+// @ts-expect-error — Frontend module is aliased via each consumer's vite.config.ts.
 import * as Juce from "juce-framework-frontend";
 
 type Listener<T> = (data: T) => void;

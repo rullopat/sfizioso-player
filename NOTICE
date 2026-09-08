@@ -5,7 +5,8 @@ This product is part of the Sfizioso project.
 
 Components and their licenses:
 
-- src/player_core, src/core_prefs, src/ui-shared — BSD 2-Clause
+- src/player_core, src/core_prefs, src/ui-shared, src/sfzbundle,
+  src/instrument_manifest, src/instrument_presentation — BSD 2-Clause
   (LICENSE-BSD-2-Clause.txt).
 - src/player (the Sfizioso Player application) — GNU AGPL v3.0
   (LICENSE-AGPL-3.0.txt).
