@@ -10,13 +10,6 @@ interface Props {
    * grid placement does not apply.
    */
   area?: string;
-  /**
-   * When true, the section renders an empty "coming soon" placeholder body
-   * instead of children — used by the parity panels that aren't built yet.
-   */
-  placeholder?: boolean;
-  /** One-line feature description shown under the placeholder label. */
-  hint?: string;
   className?: string;
   children?: ReactNode;
 }
@@ -32,8 +25,6 @@ interface Props {
 export function PanelSection({
   title,
   area,
-  placeholder,
-  hint,
   className,
   children,
 }: Props) {
@@ -47,14 +38,7 @@ export function PanelSection({
         <span className="panel-rule" />
       </div>
       <div className="panel-body">
-        {placeholder ? (
-          <div className="panel-placeholder">
-            <span className="panel-placeholder-code">COMING SOON</span>
-            {hint ? <span className="panel-placeholder-hint">{hint}</span> : null}
-          </div>
-        ) : (
-          children
-        )}
+        {children}
       </div>
     </section>
   );

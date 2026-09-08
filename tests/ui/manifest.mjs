@@ -25,6 +25,8 @@ await page.addInitScript(()=>{
 try {
  await page.goto('http://127.0.0.1:18743/src/player/ui/dist/index.html');
  await page.getByText('Evening Signals',{exact:true}).waitFor();
+ assert.equal(await page.getByText('EXPERIMENTAL', {exact:true}).count(), 0);
+ assert.equal(await page.getByText('COMING SOON', {exact:true}).count(), 0);
  assert.deepEqual(await page.locator('.cc-section h3').allTextContents(),['Tone','Expression']);
  const slider=page.getByRole('slider',{name:'Volume',exact:true});
  assert.equal(await slider.inputValue(),'100');

@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
 const base = 'http://127.0.0.1:18743';
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}) });
 try {
   for (const directory of ['manifest-instrument', 'manifest-minimal']) {
     const manifest = JSON.parse(await readFile(resolve(root, 'examples', directory, 'instrument.json'), 'utf8'));

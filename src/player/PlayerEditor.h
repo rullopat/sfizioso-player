@@ -89,7 +89,6 @@ private:
     juce::WebSliderRelay        gainRelay        { "gainDb" };
     juce::WebSliderRelay        polyphonyRelay   { "polyphony" };
     juce::WebComboBoxRelay      mpeModeRelay      { "mpeMode" };
-    juce::WebComboBoxRelay      oversamplingRelay { "oversampling" };
     juce::WebComboBoxRelay      preloadRelay      { "preloadSize" };
     juce::WebComboBoxRelay      sqLiveRelay       { "sampleQualityLive" };
     juce::WebComboBoxRelay      sqFreewheelRelay  { "sampleQualityFreewheel" };
@@ -110,7 +109,6 @@ private:
     std::unique_ptr<juce::WebSliderParameterAttachment>       gainAttach;
     std::unique_ptr<juce::WebSliderParameterAttachment>       polyphonyAttach;
     std::unique_ptr<juce::WebComboBoxParameterAttachment>     mpeModeAttach;
-    std::unique_ptr<juce::WebComboBoxParameterAttachment>     oversamplingAttach;
     std::unique_ptr<juce::WebComboBoxParameterAttachment>     preloadAttach;
     std::unique_ptr<juce::WebComboBoxParameterAttachment>     sqLiveAttach;
     std::unique_ptr<juce::WebComboBoxParameterAttachment>     sqFreewheelAttach;

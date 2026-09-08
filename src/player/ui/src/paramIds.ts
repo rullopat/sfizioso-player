@@ -9,7 +9,6 @@ export const PARAM_POLYPHONY = "polyphony";
 export const PARAM_MPE_MODE = "mpeMode";
 
 // SMPL-86 engine / quality.
-export const PARAM_OVERSAMPLING = "oversampling";
 export const PARAM_PRELOAD_SIZE = "preloadSize";
 export const PARAM_SQ_LIVE = "sampleQualityLive";
 export const PARAM_SQ_FREEWHEEL = "sampleQualityFreewheel";

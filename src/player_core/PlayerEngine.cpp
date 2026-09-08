@@ -135,13 +135,6 @@ bool PlayerEngine::shouldReloadFile()  { return synth->shouldReloadFile(); }
 bool PlayerEngine::shouldReloadScala() { return synth->shouldReloadScala(); }
 
 // --- SMPL-86 engine quality -----------------------------------------------
-void PlayerEngine::setOversamplingFactor (int factor)
-{
-    // bool return = "did the factor actually change"; immaterial to the UI.
-    synth->setOversamplingFactor (factor);
-}
-int  PlayerEngine::getOversamplingFactor() const  { return synth->getOversamplingFactor(); }
-
 void PlayerEngine::setPreloadSize (std::uint32_t bytes) { synth->setPreloadSize (bytes); }
 std::uint32_t PlayerEngine::getPreloadSize() const     { return synth->getPreloadSize(); }
 

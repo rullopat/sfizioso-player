@@ -68,7 +68,6 @@ PlayerProcessor::PlayerProcessor()
 
     for (const char* id : { PlayerEngineParamIds::polyphony,
                             PlayerEngineParamIds::mpeMode,
-                            PlayerEngineParamIds::oversampling,
                             PlayerEngineParamIds::preloadSize,
                             PlayerEngineParamIds::sampleQualityLive,
                             PlayerEngineParamIds::sampleQualityFreewheel,
@@ -90,7 +89,6 @@ PlayerProcessor::~PlayerProcessor()
 {
     for (const char* id : { PlayerEngineParamIds::polyphony,
                             PlayerEngineParamIds::mpeMode,
-                            PlayerEngineParamIds::oversampling,
                             PlayerEngineParamIds::preloadSize,
                             PlayerEngineParamIds::sampleQualityLive,
                             PlayerEngineParamIds::sampleQualityFreewheel,
@@ -124,9 +122,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlayerProcessor::createParam
     // parameter list is unchanged. All are Choice params → dropdowns; labels
     // mirror sfizz-ui (sample 0..10, oscillator 0..3).
     layout.add (
-        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { oversampling, 1 },
-                                                      "Oversampling",
-                                                      juce::StringArray { "1x", "2x", "4x", "8x" }, 0),
         std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { preloadSize, 1 },
                                                       "Preload",
                                                       kPreloadChoices(), 1), // default 8 kB (index 1)
@@ -213,7 +208,6 @@ void PlayerProcessor::applyEngineSettings()
         return 0.0f;
     };
 
-    engine.setOversamplingFactor (1 << valInt (PlayerEngineParamIds::oversampling)); // 0..3 -> 1/2/4/8
     engine.setPreloadSize (kPreloadBytesForIndex (valInt (PlayerEngineParamIds::preloadSize)));
     engine.setSampleQuality (false, valInt (PlayerEngineParamIds::sampleQualityLive));
     engine.setSampleQuality (true,  valInt (PlayerEngineParamIds::sampleQualityFreewheel));
@@ -532,8 +526,6 @@ void PlayerProcessor::parameterChanged (const juce::String& parameterID, float n
     suspendProcessing (true);
     if (parameterID == polyphony)
         engine.setNumVoices (static_cast<int> (newValue));
-    else if (parameterID == oversampling)
-        engine.setOversamplingFactor (1 << static_cast<int> (newValue));
     else if (parameterID == preloadSize)
         engine.setPreloadSize (kPreloadBytesForIndex (static_cast<int> (newValue)));
     else if (parameterID == sampleQualityLive)

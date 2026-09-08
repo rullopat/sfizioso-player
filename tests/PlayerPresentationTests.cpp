@@ -65,3 +65,23 @@ TEST_CASE ("Player restores authored presentation and discards stale artwork on 
     CHECK_FALSE (processor.getInstrumentPresentation()->preset());
     CHECK (processor.getInstrumentPresentation()->metadata.diagnostics.isEmpty());
 }
+
+TEST_CASE ("Player ignores retired experimental settings in older session state", "[processor][state]")
+{
+    PlayerProcessor processor;
+    auto state = processor.getApvts().copyState();
+    juce::ValueTree retired ("PARAM");
+    retired.setProperty ("id", "oversampling", nullptr);
+    retired.setProperty ("value", 3.0f, nullptr);
+    state.appendChild (retired, nullptr);
+    for (auto child : state)
+        if (child.getProperty ("id").toString() == "gainDb")
+            child.setProperty ("value", -12.0f, nullptr);
+    auto xml = state.createXml();
+    REQUIRE (xml);
+    juce::MemoryBlock data;
+    juce::AudioProcessor::copyXmlToBinary (*xml, data);
+    processor.setStateInformation (data.getData(), static_cast<int> (data.getSize()));
+    CHECK (processor.getApvts().getParameter ("oversampling") == nullptr);
+    CHECK (processor.getApvts().getRawParameterValue ("gainDb")->load() == -12.0f);
+}

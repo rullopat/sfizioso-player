@@ -35,7 +35,6 @@ namespace PlayerEngineParamIds
     // addParameters() below — so the closed romplers' parameter list is
     // unchanged. The constants live here so the player editor relays and
     // the engine setters reference one source of truth.
-    inline constexpr const char* oversampling           = "oversampling";
     inline constexpr const char* preloadSize            = "preloadSize";
     inline constexpr const char* sampleQualityLive      = "sampleQualityLive";
     inline constexpr const char* sampleQualityFreewheel = "sampleQualityFreewheel";
@@ -133,8 +132,6 @@ public:
 
     // SMPL-86 — engine quality / performance. All non-RT-safe (realloc /
     // disk re-read): callers must bracket with suspendProcessing.
-    void     setOversamplingFactor (int factor); // 1 / 2 / 4 / 8
-    int      getOversamplingFactor() const;
     void     setPreloadSize (std::uint32_t bytes);
     std::uint32_t getPreloadSize() const;
     void     setSampleQuality (bool freewheeling, int quality);     // 0..10

@@ -64,7 +64,6 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             .withOptionsFrom (gainRelay)
             .withOptionsFrom (polyphonyRelay)
             .withOptionsFrom (mpeModeRelay)
-            .withOptionsFrom (oversamplingRelay)
             .withOptionsFrom (preloadRelay)
             .withOptionsFrom (sqLiveRelay)
             .withOptionsFrom (sqFreewheelRelay)
@@ -115,7 +114,6 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             *apvts.getParameter (id), relay, nullptr);
     };
     mpeModeAttach             = combo (PlayerEngineParamIds::mpeMode,                mpeModeRelay);
-    oversamplingAttach        = combo (PlayerEngineParamIds::oversampling,           oversamplingRelay);
     preloadAttach             = combo (PlayerEngineParamIds::preloadSize,            preloadRelay);
     sqLiveAttach              = combo (PlayerEngineParamIds::sampleQualityLive,      sqLiveRelay);
     sqFreewheelAttach         = combo (PlayerEngineParamIds::sampleQualityFreewheel, sqFreewheelRelay);
