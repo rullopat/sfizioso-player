@@ -1,7 +1,7 @@
 # SFZ Instrument Manifest v1 — initial Player implementation
 
 Status: draft, implemented for review in Sfizioso Player. Related:
-[rullopat/sfizioso#2](https://github.com/rullopat/sfizioso/issues/2).
+[rullopat/sfizioso-player#9](https://github.com/rullopat/sfizioso-player/issues/9).
 This is an optional Player convention, not an SFZ standard change.
 
 An instrument author can group Brightness and Volume under “Tone”, choose a
@@ -120,3 +120,9 @@ the repository root with `python -m http.server 18743 --bind 127.0.0.1`, then ru
 point to an installed Playwright `index.mjs`. This test mocks the native bridge;
 it does not substitute for native plugin validation. Screenshots go to the
 system temporary directory.
+
+For reproducible README screenshots, with the same local server and Playwright
+setup, run `node tools/capture-manifest-examples.mjs`. It reads the committed
+example files, supplies deterministic bridge data to the built React UI, and
+writes `docs/assets/manifest-instrument.png` and `manifest-minimal.png`. It does
+not capture the user's desktop or run the audio engine.

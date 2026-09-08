@@ -1,0 +1,14 @@
+{
+  "format": "sfizioso.instrument-manifest",
+  "formatVersion": 1,
+  "instrument": {
+    "name": "Simple Sine"
+  },
+  "presets": [
+    {
+      "id": "sine",
+      "name": "Pure Tone",
+      "sfz": "instrument.sfz"
+    }
+  ]
+}

@@ -19,3 +19,7 @@ also triggers the existing reload poll. Reopen the SFZ after changing artwork.
 
 The sample JSON, SFZ, example writer, and generated gradient background are
 provided under the repository's BSD-2-Clause licence.
+
+See the [README option reference](../../README.md#all-manifest-options) for every
+supported field, or [Simple Sine](../manifest-minimal/) for a minimal manifest
+that retains the Player's default controls.
