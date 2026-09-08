@@ -312,7 +312,8 @@ if(PROJECT_IS_TOP_LEVEL)
         # compile JUCE's INTERFACE_SOURCES again in the test executable.
         add_executable(sfizioso_player_presentation_tests tests/PlayerPresentationTests.cpp)
         target_link_libraries(sfizioso_player_presentation_tests PRIVATE
-            $<LINK_ONLY:SfiziosoPlayer> Catch2::Catch2WithMain)
+            $<LINK_ONLY:SfiziosoPlayer> Catch2::Catch2WithMain
+            juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
         target_include_directories(sfizioso_player_presentation_tests PRIVATE
             $<TARGET_PROPERTY:SfiziosoPlayer,INCLUDE_DIRECTORIES>)
         target_compile_definitions(sfizioso_player_presentation_tests PRIVATE

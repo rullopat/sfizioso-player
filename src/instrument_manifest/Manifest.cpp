@@ -179,7 +179,7 @@ juce::MemoryBlock readLocal (const juce::File& root, const juce::String& path, s
     auto input = resolved.createInputStream();
     if (! input || input->getTotalLength() <= 0 || input->getTotalLength() > static_cast<juce::int64> (limit)) return {};
     juce::MemoryBlock bytes;
-    input->readIntoMemoryBlock (bytes, static_cast<ssize_t> (limit));
+    input->readIntoMemoryBlock (bytes, static_cast<std::ptrdiff_t> (limit));
     return bytes;
 }
 
