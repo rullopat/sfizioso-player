@@ -46,32 +46,3 @@
   gap: 18px;
   overflow: auto;
 }
-
-/* Empty parity slot (sibling stories fill these). */
-.panel-placeholder {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 80px;
-  border: 1px dashed var(--stroke);
-  border-radius: 6px;
-  color: var(--text-3);
-}
-
-.panel-placeholder-code {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: var(--text-2);
-}
-
-.panel-placeholder-hint {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--text-3);
-  text-align: center;
-  max-width: 80%;
-}

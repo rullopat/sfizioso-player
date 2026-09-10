@@ -1,4 +1,5 @@
 #include <PortableBundle.h>
+#include <PlayerEngine.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -163,7 +164,7 @@ TEST_CASE ("PortableBundle loads valid SFZ, metadata, WAV, and FLAC entries",
     CHECK (bundle.getSfzText() == "<region> sample=samples/tone.wav\n");
     CHECK (bundle.getInstrumentName() == "Test Instrument");
     CHECK (bundle.getPatchName() == "Warm Pad");
-    CHECK (bundle.getVirtualPath() == "/__sfizioso_bundle__/valid.sfz");
+    CHECK (bundle.getVirtualPath() == "/__sfizioso_bundle__/preset.sfz");
 
     checkBytes (bundle.readSampleBytes ("samples/tone.wav"), wav);
     checkBytes (bundle.readSampleBytes ("another/path/tone.wav"), wav);
@@ -283,7 +284,7 @@ TEST_CASE ("PortableBundle rejects unsupported encryption and missing SFZ data",
     }
 }
 
-TEST_CASE ("PortableBundle rejects invalid metadata cleanly",
+TEST_CASE ("PortableBundle ignores invalid metadata without blocking audio",
            "[portable_bundle][metadata][malformed]")
 {
     TempDirectory temp;
@@ -296,9 +297,9 @@ TEST_CASE ("PortableBundle rejects invalid metadata cleanly",
                           { EntryType::MetadataJson, "presets.json",
                             asBytes ("{not-json") } });
         PortableBundle bundle;
-        CHECK_FALSE (
+        CHECK (
             bundle.loadFromFile (temp.write ("bad-json.sfzbundle", bytes)));
-        CHECK (bundle.getError().containsIgnoreCase ("JSON object"));
+        CHECK (bundle.getInstrumentName().isEmpty());
     }
 
     SECTION ("metadata JSON is not an object")
@@ -308,9 +309,9 @@ TEST_CASE ("PortableBundle rejects invalid metadata cleanly",
                 asBytes ("<region> sample=*sine") },
               { EntryType::MetadataJson, "presets.json", asBytes ("[]") } });
         PortableBundle bundle;
-        CHECK_FALSE (
+        CHECK (
             bundle.loadFromFile (temp.write ("json-array.sfzbundle", bytes)));
-        CHECK (bundle.getError().containsIgnoreCase ("JSON object"));
+        CHECK (bundle.getInstrumentName().isEmpty());
     }
 
     SECTION ("metadata is not UTF-8")
@@ -320,9 +321,9 @@ TEST_CASE ("PortableBundle rejects invalid metadata cleanly",
                 asBytes ("<region> sample=*sine") },
               { EntryType::MetadataJson, "presets.json", { 0xc3, 0x28 } } });
         PortableBundle bundle;
-        CHECK_FALSE (
+        CHECK (
             bundle.loadFromFile (temp.write ("bad-utf8.sfzbundle", bytes)));
-        CHECK (bundle.getError().containsIgnoreCase ("UTF-8"));
+        CHECK (bundle.getInstrumentName().isEmpty());
     }
 }
 
@@ -344,4 +345,87 @@ TEST_CASE ("PortableBundle exposes no partial data after a malformed entry",
     CHECK_FALSE (bundle.isValid());
     CHECK (bundle.getSfzText().isEmpty());
     CHECK (bundle.readSampleBytes ("tone.wav").data == nullptr);
+}
+
+TEST_CASE ("Manifest selects a named bundle preset and exposes exact asset paths", "[portable_bundle][manifest]")
+{
+    TempDirectory temp;
+    const auto metadata = asBytes (R"({"format":"sfizioso.instrument-manifest","formatVersion":1,
+        "instrument":{"name":"Named instrument"},"presets":[{"id":"chosen","name":"Chosen","sfz":"chosen.sfz"}]})");
+    const auto bytes = makeBundle ({
+        { EntryType::SfzText, "other.sfz", asBytes ("<region> sample=*silence") },
+        { EntryType::SfzText, "chosen.sfz", asBytes ("<region> sample=*sine") },
+        { EntryType::MetadataJson, "instrument.json", metadata },
+        { static_cast<EntryType> (8), "artwork/bg.png", {1,2,3} }
+    });
+    PortableBundle bundle;
+    REQUIRE (bundle.loadFromFile (temp.write ("manifest.sfzbundle", bytes)));
+    CHECK (bundle.getInstrumentName() == "Named instrument");
+    CHECK (bundle.getPatchName() == "Chosen");
+    CHECK (bundle.getSfzText().contains ("*sine"));
+    CHECK (bundle.getVirtualPath() == "/__sfizioso_bundle__/chosen.sfz");
+    REQUIRE (bundle.getManifest().manifest);
+    CHECK (bundle.readAsset ("artwork/bg.png").size == 3);
+    CHECK (bundle.readAsset ("bg.png").data == nullptr);
+    CHECK (bundle.readAsset ("../artwork/bg.png").data == nullptr);
+    const auto plain = makeBundle ({{EntryType::SfzText, "plain.sfz", asBytes ("<region> sample=*sine")}});
+    REQUIRE (bundle.loadFromFile (temp.write ("plain.sfzbundle", plain)));
+    CHECK_FALSE (bundle.getManifest().manifest);
+    CHECK (bundle.getInstrumentName().isEmpty());
+    CHECK (bundle.readAsset ("artwork/bg.png").data == nullptr);
+}
+TEST_CASE ("Invalid canonical bundle manifests keep the original SFZ playable", "[portable_bundle][manifest]")
+{
+    TempDirectory temp;
+    for (const auto& metadata : {std::string ("{bad"), std::string (R"({"format":"sfizioso.instrument-manifest","formatVersion":2})"),
+        std::string (R"({"format":"sfizioso.instrument-manifest","formatVersion":1,"instrument":{"name":"Bad"},"presets":[{"id":"missing","name":"Missing","sfz":"missing.sfz"}]})")})
+    {
+        const auto bytes = makeBundle ({
+            {EntryType::SfzText, "original.sfz", asBytes ("<region> sample=*sine")},
+            {EntryType::MetadataJson, "instrument.json", asBytes (metadata)}});
+        PortableBundle bundle;
+        REQUIRE (bundle.loadFromFile (temp.write ("invalid.sfzbundle", bytes)));
+        CHECK_FALSE (bundle.getManifest().manifest);
+        CHECK_FALSE (bundle.getManifest().diagnostics.isEmpty());
+        CHECK (bundle.getSfzText().contains ("*sine"));
+    }
+}
+
+TEST_CASE ("Bundle metadata and CC presentation preserve rendered audio", "[portable_bundle][manifest][audio]")
+{
+    TempDirectory temp;
+    const std::string sfz = "<control> label_cc7=Volume set_cc7=127\n<region> sample=*sine amplitude_oncc7=100 ampeg_release=0.01";
+    const auto render = [&] (const std::string& metadata)
+    {
+        const auto bytes = makeBundle ({{EntryType::SfzText, "one.sfz", asBytes (sfz)},
+            {EntryType::MetadataJson, "instrument.json", asBytes (metadata)}});
+        PortableBundle bundle;
+        REQUIRE (bundle.loadFromFile (temp.write ("audio.sfzbundle", bytes)));
+        samplemachine::PlayerEngine engine;
+        engine.prepareToPlay (44100.0, 256);
+        engine.setMpeMode (samplemachine::MpeMode::None, 48);
+        engine.setSampleReader (bundle.getSampleReader());
+        REQUIRE (engine.loadSfzString (bundle.getSfzText(), bundle.getVirtualPath()));
+        CHECK (engine.getCcValue (7) == 1.0f); // SFZ defaults remain authoritative.
+        juce::AudioBuffer<float> audio (2, 256);
+        juce::MidiBuffer midi;
+        midi.addEvent (juce::MidiMessage::noteOn (1, 60, juce::uint8 (100)), 0);
+        double energy = 0;
+        for (int block = 0; block < 8; ++block)
+        {
+            audio.clear();
+            engine.processBlock (audio, midi);
+            midi.clear();
+            energy += audio.getRMSLevel (0, 0, 256);
+        }
+        CHECK (energy > 0.01);
+        engine.setCcValue (7, 0.0f); // Same dispatch path used by all UI widgets.
+        for (int block = 0; block < 32; ++block) { audio.clear(); engine.processBlock (audio, midi); }
+        CHECK (audio.getRMSLevel (0, 0, 256) < 0.0001f);
+        return energy;
+    };
+    const auto generic = render ("{bad");
+    const auto authored = render (R"({"format":"sfizioso.instrument-manifest","formatVersion":1,"instrument":{"name":"Audio"},
+        "presets":[{"id":"one","name":"One","sfz":"one.sfz","presentation":{"sections":[{"id":"volume","controls":[{"target":{"type":"cc","number":7},"widget":"slider"}]}]}}]})");
+    CHECK (std::abs (generic - authored) < 0.00001);
 }

@@ -29,7 +29,8 @@ enum class BundleEntryType : std::uint16_t
     MetadataJson = 4,
     LogoPng      = 5,
     WordmarkSvg  = 6,
-    FontWoff2    = 7
+    FontWoff2    = 7,
+    Asset        = 8
 };
 
 #pragma pack(push, 1)

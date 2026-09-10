@@ -5,7 +5,6 @@ import { InfoPanel } from "./components/InfoPanel";
 import { EnginePanel } from "./components/EnginePanel";
 import { TuningPanel } from "./components/TuningPanel";
 import { MpePanel } from "./components/MpePanel";
-import { ExperimentalPanel } from "./components/ExperimentalPanel";
 import { CcControlsPanel } from "./components/CcControlsPanel";
 import { Knob } from "@shared/components/Knob";
 import { LevelMeter } from "@shared/components/LevelMeter";
@@ -45,7 +44,6 @@ const TABS = [
   { id: "tuning", label: "TUNING" },
   { id: "mpe", label: "MPE" },
   { id: "info", label: "INFO" },
-  { id: "experimental", label: "EXPERIMENTAL" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -128,7 +126,6 @@ export default function App() {
         {tab === "tuning" && <TuningPanel />}
         {tab === "mpe" && <MpePanel />}
         {tab === "info" && <InfoPanel status={status} activeVoices={activeVoices} />}
-        {tab === "experimental" && <ExperimentalPanel />}
       </main>
 
       {/* Docked, always-playable keyboard (SMPL-88). */}

@@ -35,7 +35,6 @@ namespace PlayerEngineParamIds
     // addParameters() below — so the closed romplers' parameter list is
     // unchanged. The constants live here so the player editor relays and
     // the engine setters reference one source of truth.
-    inline constexpr const char* oversampling           = "oversampling";
     inline constexpr const char* preloadSize            = "preloadSize";
     inline constexpr const char* sampleQualityLive      = "sampleQualityLive";
     inline constexpr const char* sampleQualityFreewheel = "sampleQualityFreewheel";
@@ -60,18 +59,16 @@ namespace PlayerEngineParamIds
 /**
  * @brief How the engine should treat per-channel MIDI input.
  *
- * - None      single-channel; collapses everything to channel 0 (master).
- *             Default. Behavior matches the pre-MPE engine.
- * - Pressure  same dispatch as None today (placeholder; SMPL-28 v1's
- *             channel-pressure-to-polyAT translation lives here in a
- *             follow-up). Brands set "pressure" when they want some
- *             expressivity but don't need full per-note pitch.
- * - Full      true MPE — pitch / CC / aftertouch arriving on member
- *             channels (1..15) are routed to per-channel modulation
- *             slots so voices respond independently. Requires the
- *             SMPL-29 sfizz fork (SAMPLEMACHINE_SFIZZ_HAS_MPE).
+ * - None: non-MPE MIDI dispatch, preserving channel-restricted SFZ routing.
+ * - Full: per-note MPE expression, with Manager/Member inheritance.
+ * Legacy value 1 behaves as None and is retained for saved-state compatibility.
  */
-enum class MpeMode { None, Pressure, Full };
+enum class MpeMode {
+    None = 0,
+    LegacyOff = 1,
+    Full = 2,
+    Pressure [[deprecated("Unimplemented mode retired; use None")]] = LegacyOff
+};
 
 /**
  * @brief One auto-generated CC control for the editor's CONTROLS panel.
@@ -100,7 +97,7 @@ public:
      *                        The host shell passes the per-brand default
      *                        (e.g. RomplerProcessor reads it from
      *                        BrandConfig::kMpeMode); the user can flip
-     *                        to any of the three values at runtime via
+     *                        between Off and Full at runtime via
      *                        the editor combo box, and DAW project state
      *                        round-trips the chosen value through APVTS.
      */
@@ -133,8 +130,6 @@ public:
 
     // SMPL-86 — engine quality / performance. All non-RT-safe (realloc /
     // disk re-read): callers must bracket with suspendProcessing.
-    void     setOversamplingFactor (int factor); // 1 / 2 / 4 / 8
-    int      getOversamplingFactor() const;
     void     setPreloadSize (std::uint32_t bytes);
     std::uint32_t getPreloadSize() const;
     void     setSampleQuality (bool freewheeling, int quality);     // 0..10

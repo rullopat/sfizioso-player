@@ -1,0 +1,40 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+.cc-grid {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+  align-content: flex-start;
+}
+
+.cc-empty {
+  width: 100%;
+  margin: auto;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
+
+.instrument-presentation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  width: 100%;
+  min-height: 118px;
+  padding: 12px;
+  border-radius: 5px;
+  background-size: cover;
+  background-position: center;
+}
+.instrument-identity { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; margin-bottom: 0; }
+.instrument-identity strong { color: var(--text-1); }
+.instrument-identity span { color: var(--text-2); }
+.cc-section { flex: 1 1 240px; min-width: 0; }
+.cc-section h3 { color: var(--text-1); font-size: 12px; margin: 0 0 16px; }
+.cc-slider { display: flex; flex-direction: column; gap: 12px; width: 160px; color: var(--text-1); font-size: 11px; }
+.cc-slider input { width: 100%; accent-color: var(--accent); }
+.cc-slider input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.instrument-diagnostics { width: 100%; margin-top: 8px; color: var(--text-2); font-size: 11px; }
+

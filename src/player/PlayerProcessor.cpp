@@ -68,7 +68,6 @@ PlayerProcessor::PlayerProcessor()
 
     for (const char* id : { PlayerEngineParamIds::polyphony,
                             PlayerEngineParamIds::mpeMode,
-                            PlayerEngineParamIds::oversampling,
                             PlayerEngineParamIds::preloadSize,
                             PlayerEngineParamIds::sampleQualityLive,
                             PlayerEngineParamIds::sampleQualityFreewheel,
@@ -90,7 +89,6 @@ PlayerProcessor::~PlayerProcessor()
 {
     for (const char* id : { PlayerEngineParamIds::polyphony,
                             PlayerEngineParamIds::mpeMode,
-                            PlayerEngineParamIds::oversampling,
                             PlayerEngineParamIds::preloadSize,
                             PlayerEngineParamIds::sampleQualityLive,
                             PlayerEngineParamIds::sampleQualityFreewheel,
@@ -124,9 +122,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlayerProcessor::createParam
     // parameter list is unchanged. All are Choice params → dropdowns; labels
     // mirror sfizz-ui (sample 0..10, oscillator 0..3).
     layout.add (
-        std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { oversampling, 1 },
-                                                      "Oversampling",
-                                                      juce::StringArray { "1x", "2x", "4x", "8x" }, 0),
         std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { preloadSize, 1 },
                                                       "Preload",
                                                       kPreloadChoices(), 1), // default 8 kB (index 1)
@@ -213,7 +208,6 @@ void PlayerProcessor::applyEngineSettings()
         return 0.0f;
     };
 
-    engine.setOversamplingFactor (1 << valInt (PlayerEngineParamIds::oversampling)); // 0..3 -> 1/2/4/8
     engine.setPreloadSize (kPreloadBytesForIndex (valInt (PlayerEngineParamIds::preloadSize)));
     engine.setSampleQuality (false, valInt (PlayerEngineParamIds::sampleQualityLive));
     engine.setSampleQuality (true,  valInt (PlayerEngineParamIds::sampleQualityFreewheel));
@@ -264,6 +258,7 @@ bool PlayerProcessor::loadSfzOrBundleFile (const juce::File& file)
         }
 
         currentBundle = std::move (bundle);
+        loadInstrumentPresentation (file);
         return true;
     }
 
@@ -272,6 +267,7 @@ bool PlayerProcessor::loadSfzOrBundleFile (const juce::File& file)
         return false;
 
     currentBundle.reset();
+    loadInstrumentPresentation (file);
     return true;
 }
 
@@ -283,12 +279,31 @@ juce::File PlayerProcessor::getCurrentSfzFile() const
 
 juce::String PlayerProcessor::getLoadedInstrumentName() const
 {
-    return currentBundle != nullptr ? currentBundle->getInstrumentName() : juce::String();
+    return getInstrumentPresentation()->instrumentName;
 }
 
 juce::String PlayerProcessor::getLoadedPatchName() const
 {
-    return currentBundle != nullptr ? currentBundle->getPatchName() : juce::String();
+    return getInstrumentPresentation()->presetName;
+}
+
+void PlayerProcessor::loadInstrumentPresentation (const juce::File& file)
+{
+    lastManifestModTime = file.getSiblingFile ("instrument.json").getLastModificationTime();
+    auto snapshot = sfizioso_manifest::buildPresentation (
+        currentBundle ? currentBundle->getManifest() : sfizioso_manifest::loadBeside (file),
+        currentBundle ? currentBundle->getSfzEntryName() : file.getFileName(),
+        "/instrument-artwork/" + juce::String (++artworkRevision),
+        [&] (const juce::String& path) {
+            if (! currentBundle)
+                return sfizioso_manifest::readLocal (file.getParentDirectory(), path, sfizioso_manifest::maxAssetBytes);
+            const auto bytes = currentBundle->readAsset (path);
+            return bytes.data && bytes.size <= sfizioso_manifest::maxAssetBytes
+                ? juce::MemoryBlock (bytes.data, bytes.size) : juce::MemoryBlock();
+        },
+        currentBundle ? currentBundle->getInstrumentName() : juce::String(),
+        currentBundle ? currentBundle->getPatchName() : juce::String());
+    std::atomic_store (&instrumentPresentation, std::move (snapshot));
 }
 
 // --- SMPL-87 scala ---------------------------------------------------------
@@ -356,7 +371,8 @@ bool PlayerProcessor::checkForFileReload()
 
     bool changed = engine.shouldReloadFile(); // tracks changed includes
     const auto mod = file.getLastModificationTime();
-    if (mod != lastSfzModTime)
+    if (mod != lastSfzModTime || (! currentBundle
+        && file.getSiblingFile ("instrument.json").getLastModificationTime() != lastManifestModTime))
         changed = true;
     if (! changed)
         return false;
@@ -510,8 +526,6 @@ void PlayerProcessor::parameterChanged (const juce::String& parameterID, float n
     suspendProcessing (true);
     if (parameterID == polyphony)
         engine.setNumVoices (static_cast<int> (newValue));
-    else if (parameterID == oversampling)
-        engine.setOversamplingFactor (1 << static_cast<int> (newValue));
     else if (parameterID == preloadSize)
         engine.setPreloadSize (kPreloadBytesForIndex (static_cast<int> (newValue)));
     else if (parameterID == sampleQualityLive)

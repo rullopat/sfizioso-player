@@ -1,0 +1,13 @@
+// Minimal manifest: sound, labels and controller defaults stay in SFZ.
+<control>
+label_cc7=Volume
+label_cc1=Vibrato
+set_cc7=100
+set_cc1=0
+<region>
+sample=*sine
+volume=-18
+ampeg_release=0.3
+amplitude_oncc7=100
+pitchlfo_freq=5
+pitchlfo_depth_oncc1=30

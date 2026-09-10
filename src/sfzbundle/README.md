@@ -46,3 +46,12 @@ and immovable while using entry names or payload views.
 Payload meaning remains a host concern. The library does not parse SFZ, JSON,
 audio, images, fonts, or encryption keys. Hosts can use `isValidUtf8()` before
 interpreting textual payloads.
+
+## Optional instrument assets
+
+`Asset = 8` holds opaque package assets using their package-relative paths as
+entry names. Existing values 0–7 and the version-2 layout are unchanged. Readers
+which do not consume assets ignore this type; the structural parser accepts
+unknown entry types for forward compatibility. The Player's manifest consumer
+validates and decodes referenced artwork separately. See the
+[instrument manifest contract](../../docs/spec/sfz-instrument-manifest-v1.md).

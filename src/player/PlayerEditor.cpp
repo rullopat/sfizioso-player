@@ -64,7 +64,6 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             .withOptionsFrom (gainRelay)
             .withOptionsFrom (polyphonyRelay)
             .withOptionsFrom (mpeModeRelay)
-            .withOptionsFrom (oversamplingRelay)
             .withOptionsFrom (preloadRelay)
             .withOptionsFrom (sqLiveRelay)
             .withOptionsFrom (sqFreewheelRelay)
@@ -84,7 +83,7 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             .withNativeFunction ("getStatus",     [this] (auto& a, auto c) { handleGetStatus     (a, std::move (c)); })
             .withNativeFunction ("getAppInfo",    [this] (auto& a, auto c) { handleGetAppInfo    (a, std::move (c)); })
             .withNativeFunction ("getRecentFiles",[this] (auto& a, auto c) { handleGetRecent     (a, std::move (c)); })
-            .withNativeFunction ("getCcControls", [this] (auto& a, auto c) { handleGetCcControls (a, std::move (c)); })
+            .withNativeFunction ("getInstrumentPresentation", [this] (auto& a, auto c) { handleGetCcControls (a, std::move (c)); })
             .withNativeFunction ("setCc",         [this] (auto& a, auto c) { handleSetCc         (a, std::move (c)); })
             .withNativeFunction ("getKeyLabels",  [this] (auto& a, auto c) { handleGetKeyLabels  (a, std::move (c)); })
             .withNativeFunction ("noteOn",        [this] (auto& a, auto c) { handleNoteOn        (a, std::move (c)); })
@@ -115,7 +114,6 @@ PlayerEditor::PlayerEditor (PlayerProcessor& p)
             *apvts.getParameter (id), relay, nullptr);
     };
     mpeModeAttach             = combo (PlayerEngineParamIds::mpeMode,                mpeModeRelay);
-    oversamplingAttach        = combo (PlayerEngineParamIds::oversampling,           oversamplingRelay);
     preloadAttach             = combo (PlayerEngineParamIds::preloadSize,            preloadRelay);
     sqLiveAttach              = combo (PlayerEngineParamIds::sampleQualityLive,      sqLiveRelay);
     sqFreewheelAttach         = combo (PlayerEngineParamIds::sampleQualityFreewheel, sqFreewheelRelay);
@@ -202,6 +200,14 @@ PlayerEditor::ResourceResult PlayerEditor::getResource (const juce::String& url)
     juce::String path = url.startsWithChar ('/') ? url.substring (1) : url;
     if (path.isEmpty())
         path = "index.html";
+
+    const auto presentation = processor.getInstrumentPresentation();
+    if (url == presentation->artworkPath && ! presentation->artwork.isEmpty())
+    {
+        const auto& block = presentation->artwork;
+        const auto* bytes = static_cast<const std::byte*> (block.getData());
+        return juce::WebBrowserComponent::Resource { { bytes, bytes + block.getSize() }, presentation->artworkMime };
+    }
 
     if (uiZip == nullptr)
         return std::nullopt;
@@ -349,7 +355,7 @@ void PlayerEditor::handleGetAppInfo (const juce::Array<juce::var>&, Completion c
     // defines (CMake PRODUCT_NAME / VERSION). The UI no longer hardcodes them.
     juce::DynamicObject::Ptr obj = new juce::DynamicObject();
     obj->setProperty ("productName", juce::String (JucePlugin_Name));
-    obj->setProperty ("version",     juce::String (JucePlugin_VersionString));
+    obj->setProperty ("version",     juce::String (SFIZIOSO_PLAYER_RELEASE_VERSION));
     completion (juce::var (obj.get()));
 }
 
@@ -406,20 +412,19 @@ void PlayerEditor::handleGetRecent (const juce::Array<juce::var>&, Completion co
 
 void PlayerEditor::handleGetCcControls (const juce::Array<juce::var>&, Completion completion)
 {
-    ccControlNumbers.clear();
-    juce::Array<juce::var> out;
+    std::vector<sfizioso_manifest::GenericControl> generic;
     for (const auto& c : processor.getEngine().getCcControls())
-    {
-        ccControlNumbers.push_back (c.number);
-        juce::DynamicObject::Ptr o = new juce::DynamicObject();
-        o->setProperty ("number",       c.number);
-        o->setProperty ("label",        c.label);
-        o->setProperty ("value",        static_cast<double> (processor.getEngine().getCcValue (c.number)));
-        o->setProperty ("defaultValue", static_cast<double> (c.defaultValue));
-        o->setProperty ("isSwitch",     c.isSwitch);
-        out.add (juce::var (o.get()));
-    }
-    completion (juce::var (out));
+        generic.push_back ({ c.number, c.label, c.isSwitch });
+    const auto presentation = processor.getInstrumentPresentation();
+    auto snapshot = sfizioso_manifest::presentationToVar (*presentation, generic,
+        [&] (int number) { return processor.getEngine().getCcValue (number); },
+        juce::WebBrowserComponent::getResourceProviderRoot() + presentation->artworkPath.substring (1));
+    ccControlNumbers.clear();
+    const auto controlList = snapshot.getProperty ("controls", {});
+    if (auto* controls = controlList.getArray())
+        for (const auto& control : *controls)
+            ccControlNumbers.push_back (static_cast<int> (control.getProperty ("number", 0)));
+    completion (snapshot);
 }
 
 void PlayerEditor::handleSetCc (const juce::Array<juce::var>& args, Completion completion)

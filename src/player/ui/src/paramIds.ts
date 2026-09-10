@@ -9,7 +9,6 @@ export const PARAM_POLYPHONY = "polyphony";
 export const PARAM_MPE_MODE = "mpeMode";
 
 // SMPL-86 engine / quality.
-export const PARAM_OVERSAMPLING = "oversampling";
 export const PARAM_PRELOAD_SIZE = "preloadSize";
 export const PARAM_SQ_LIVE = "sampleQualityLive";
 export const PARAM_SQ_FREEWHEEL = "sampleQualityFreewheel";
@@ -35,7 +34,7 @@ export const FN_LOAD_SFZ_PATH = "loadSfzPath";   // SMPL-89
 export const FN_GET_STATUS = "getStatus";
 export const FN_GET_APP_INFO = "getAppInfo";
 export const FN_GET_RECENT = "getRecentFiles";   // SMPL-89
-export const FN_GET_CC_CONTROLS = "getCcControls"; // SMPL-85
+export const FN_GET_INSTRUMENT_PRESENTATION = "getInstrumentPresentation";
 export const FN_SET_CC = "setCc";                // SMPL-85
 export const FN_GET_KEY_LABELS = "getKeyLabels"; // SMPL-88
 export const FN_NOTE_ON = "noteOn";              // SMPL-88

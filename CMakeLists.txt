@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(SfiziosoPlayer VERSION 0.12.3 LANGUAGES C CXX)
+project(SfiziosoPlayer VERSION 1.0.0 LANGUAGES C CXX)
+# Native plugin formats require numeric versions; expose the prerelease in the UI.
+set(SFIZIOSO_PLAYER_RELEASE_VERSION "1.0.0-rc.1")
 
 # Keep the whole dependency tree on at least C++17. The vendored sfizioso
 # CMake defaults to C++14 when it owns the cache, but its current sources use
@@ -116,6 +118,22 @@ target_include_directories(sfizioso_bundle PUBLIC src)
 target_compile_features(sfizioso_bundle PUBLIC cxx_std_17)
 set_target_properties(sfizioso_bundle PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
+# Shared, load-time instrument metadata. No engine or UI dependency.
+add_library(instrument_manifest STATIC src/instrument_manifest/Manifest.cpp)
+add_library(sfizioso_player::instrument_manifest ALIAS instrument_manifest)
+target_include_directories(instrument_manifest PUBLIC src)
+target_link_libraries(instrument_manifest PUBLIC juce::juce_core PRIVATE sfizioso_player::sfzbundle)
+target_compile_definitions(instrument_manifest PRIVATE JUCE_USE_CURL=0)
+
+# Shared presentation preparation and bridge DTOs; no Player or engine dependency.
+add_library(instrument_presentation STATIC src/instrument_presentation/Presentation.cpp)
+add_library(sfizioso_player::instrument_presentation ALIAS instrument_presentation)
+target_include_directories(instrument_presentation PUBLIC src)
+target_compile_definitions(instrument_presentation PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(instrument_presentation PUBLIC sfizioso_player::instrument_manifest
+    PRIVATE juce::juce_graphics)
+set_target_properties(instrument_manifest instrument_presentation PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
 # ---------------------------------------------------------------------------
 # core_prefs — global user preference store (theme persistence). BSD-2-Clause.
 # Consumed by the Sfizioso Player and by the private branded romplers.
@@ -174,6 +192,7 @@ if(SFIZIOSO_PLAYER_TESTS)
         tests/PlayerEngineChannelRoutingTests.cpp
         tests/PlayerEngineProgramChangeTests.cpp
         tests/PortableBundleTests.cpp
+        tests/InstrumentManifestTests.cpp
         tests/SfzBundleParserTests.cpp
         src/player/PortableBundle.cpp)
     target_include_directories(sfizioso_player_tests PRIVATE src/player)
@@ -181,6 +200,7 @@ if(SFIZIOSO_PLAYER_TESTS)
         PRIVATE
             player_core
             sfizioso_player::sfzbundle
+            sfizioso_player::instrument_manifest
             sfizioso::sfizioso
             juce::juce_core
             Catch2::Catch2WithMain)
@@ -237,7 +257,7 @@ endfunction()
 # ---------------------------------------------------------------------------
 if(PROJECT_IS_TOP_LEVEL)
     juce_add_plugin(SfiziosoPlayer
-        VERSION 0.12.3
+        VERSION ${PROJECT_VERSION}
         COMPANY_NAME "Sfizioso"
         BUNDLE_ID ${SFIZIOSO_PLAYER_PLUGIN_BUNDLE_ID}
         PLUGIN_MANUFACTURER_CODE PtRl
@@ -270,6 +290,7 @@ if(PROJECT_IS_TOP_LEVEL)
     target_include_directories(SfiziosoPlayer PRIVATE src/player)
 
     target_compile_definitions(SfiziosoPlayer PUBLIC
+        SFIZIOSO_PLAYER_RELEASE_VERSION="${SFIZIOSO_PLAYER_RELEASE_VERSION}"
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         $<$<PLATFORM_ID:Windows>:JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1>)
@@ -279,6 +300,7 @@ if(PROJECT_IS_TOP_LEVEL)
             juce::juce_audio_utils
             player_core
             sfizioso_player::sfzbundle
+            sfizioso_player::instrument_presentation
             sfizioso::sfizioso
             core_prefs            # SMPL-89 recent-files persistence
         PUBLIC
@@ -297,4 +319,32 @@ if(PROJECT_IS_TOP_LEVEL)
                     ${SFIZIOSO_UI_SHARED}/*.css)
     target_link_libraries(SfiziosoPlayer PRIVATE SfiziosoPlayerUiData)
     target_compile_definitions(SfiziosoPlayer PUBLIC JUCE_WEB_BROWSER=1)
+    if(SFIZIOSO_PLAYER_TESTS)
+        # This consumer deliberately has no Player application or engine linkage.
+        add_executable(sfizioso_shared_presentation_tests tests/SharedPresentationTests.cpp)
+        target_link_libraries(sfizioso_shared_presentation_tests PRIVATE
+            sfizioso_player::instrument_presentation Catch2::Catch2WithMain)
+        target_compile_definitions(sfizioso_shared_presentation_tests PRIVATE JUCE_USE_CURL=0
+            SFIZIOSO_MANIFEST_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/examples/manifest-instrument")
+        catch_discover_tests(sfizioso_shared_presentation_tests)
+
+        # Reuse the compiled application without recompiling JUCE interface sources.
+        add_executable(sfizioso_player_presentation_tests tests/PlayerPresentationTests.cpp)
+        target_link_libraries(sfizioso_player_presentation_tests PRIVATE
+            $<LINK_ONLY:SfiziosoPlayer> Catch2::Catch2WithMain
+            juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
+        target_include_directories(sfizioso_player_presentation_tests PRIVATE
+            $<TARGET_PROPERTY:SfiziosoPlayer,INCLUDE_DIRECTORIES>)
+        target_compile_definitions(sfizioso_player_presentation_tests PRIVATE
+            $<TARGET_PROPERTY:SfiziosoPlayer,COMPILE_DEFINITIONS>
+            SFIZIOSO_MANIFEST_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/examples/manifest-instrument")
+        # Xcode 15's new linker fails with "invalid use of branch fixup"
+        # when this test links the application's LTO archive. Keep the workaround
+        # limited to the affected test/toolchain; plugin link settings are unchanged.
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+           AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+            target_link_options(sfizioso_player_presentation_tests PRIVATE -Wl,-ld_classic)
+        endif()
+        catch_discover_tests(sfizioso_player_presentation_tests)
+    endif()
 endif()
